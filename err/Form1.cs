@@ -27,6 +27,7 @@ namespace err
                 mCon.Open();
             }
         }
+
         private void CloseCon()
         {
             if (mCon.State == ConnectionState.Open)
@@ -34,6 +35,7 @@ namespace err
                 mCon.Close();
             }
         }
+
         public void ExecutQuery(string q)
         {
             try
