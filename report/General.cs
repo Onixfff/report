@@ -30,16 +30,25 @@ namespace report
         }
         private void OpenCon()
         {
+            string messageError = "Unknown system variable 'lower_case_table_names'";
+            
             if (mCon.State == ConnectionState.Closed)
             {
                 try
                 {
                     mCon.Open();
                 }
+                catch(MySqlException ex)
+                {
+                    if (ex.Message != messageError)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+                }
                 catch (Exception ex)
                 {
-                    //MessageBox.Show("Нет соединения с сервером... попробуйте позже");
-                    //return;
+                    MessageBox.Show("Нет соединения с сервером... попробуйте позже");
+                    return;
                 }
             }
         }
@@ -102,32 +111,41 @@ namespace report
 "" +
   "from spslogger.mixreport as mr where Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')  group by df,shift, data_52";
 #endif
-            // string sql = ("SELECT * FROM spslogger.configtable;");
-            MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon);
-            DataSet ds = new DataSet();
-            ds.Reset();
-            dD.Fill(ds, sql);
-            dataGridView1.DataSource = ds.Tables[0];
-            //dataGridView1.AutoResizeColumns();
-            dataGridView1.Columns["df"].HeaderText = "Дата";
-            dataGridView1.Columns["Lime_1"].Visible = false;
-            dataGridView1.Columns["Lime_2"].Visible = false;
-            dataGridView1.Columns["Cement_1"].Visible = false;
-            dataGridView1.Columns["Cement_2"].Visible = false;
-            dataGridView1.Columns["shift"].HeaderText = "смена";
-            dataGridView1.Columns["count_1"].HeaderText = "Кол-во массивов";
-            dataGridView1.Columns["mas"].HeaderText = "м.куб";
-            dataGridView1.Columns["Lime_sum"].HeaderText = "Известь, кг";
-            dataGridView1.Columns["Lime_sum"].DefaultCellStyle.Format = "N2";
-            dataGridView1.Columns["Cement_sum"].HeaderText = "Цемент, кг";
-            dataGridView1.Columns["Cement_sum"].DefaultCellStyle.Format = "N2";
-            dataGridView1.Columns["Gips"].HeaderText = "Гипс, кг";
-            dataGridView1.Columns["Sand"].HeaderText = "Песок, кг";
-            dataGridView1.Columns["Additive"].HeaderText = "Добавка, кг";
-            dataGridView1.Columns["alum"].HeaderText = "Алюминий, кг";
-            dataGridView1.Columns["drob"].HeaderText = "Шары мелющие, кг";
-            dataGridView1.Columns["brak"].HeaderText = "Шламовые массивы";
-
+            try
+            {
+                OpenCon();
+                using (MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon))
+                {
+                    DataSet ds = new DataSet();
+                    ds.Reset();
+                    dD.Fill(ds, sql);
+                    dataGridView1.DataSource = ds.Tables[0];
+                    //dataGridView1.AutoResizeColumns();
+                    dataGridView1.Columns["df"].HeaderText = "Дата";
+                    dataGridView1.Columns["Lime_1"].Visible = false;
+                    dataGridView1.Columns["Lime_2"].Visible = false;
+                    dataGridView1.Columns["Cement_1"].Visible = false;
+                    dataGridView1.Columns["Cement_2"].Visible = false;
+                    dataGridView1.Columns["shift"].HeaderText = "смена";
+                    dataGridView1.Columns["count_1"].HeaderText = "Кол-во массивов";
+                    dataGridView1.Columns["mas"].HeaderText = "м.куб";
+                    dataGridView1.Columns["Lime_sum"].HeaderText = "Известь, кг";
+                    dataGridView1.Columns["Lime_sum"].DefaultCellStyle.Format = "N2";
+                    dataGridView1.Columns["Cement_sum"].HeaderText = "Цемент, кг";
+                    dataGridView1.Columns["Cement_sum"].DefaultCellStyle.Format = "N2";
+                    dataGridView1.Columns["Gips"].HeaderText = "Гипс, кг";
+                    dataGridView1.Columns["Sand"].HeaderText = "Песок, кг";
+                    dataGridView1.Columns["Additive"].HeaderText = "Добавка, кг";
+                    dataGridView1.Columns["alum"].HeaderText = "Алюминий, кг";
+                    dataGridView1.Columns["drob"].HeaderText = "Шары мелющие, кг";
+                    dataGridView1.Columns["brak"].HeaderText = "Шламовые массивы";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally { CloseCon(); }
 
             foreach (DataGridViewRow item in dataGridView1.Rows)
             {
@@ -136,11 +154,11 @@ namespace report
                 {
                     item.DefaultCellStyle.BackColor = Color.LightBlue;
                 }
-                else item.DefaultCellStyle.BackColor = Color.LightYellow;
-
-
+                else
+                {
+                    item.DefaultCellStyle.BackColor = Color.LightYellow;
+                }
             }
-            //this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
         }
 
         private void update_report_sm()
@@ -362,35 +380,44 @@ namespace report
                  "concat(cast(round((count(dbid) * '4.32' * '" + sh + "'), 2) as char(10)), ' / ', '" + sh + "') as drob, " + sql2 + " from spslogger.mixreport as mr where  Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')   group by data_52";
 #endif
 
-            //string sql = ("call spslogger.new_procedure()");
-            MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon);
-            DataSet ds = new DataSet();
-            ds.Reset();
-            dD.Fill(ds, sql);
-            dataGridView2.DataSource = ds.Tables[0];
-            //dataGridView1.AutoResizeColumns();
-            dataGridView2.Columns["data_52"].HeaderText = "Наименование рецепта";
-            dataGridView2.Columns["data_52"].DisplayIndex=0;
-            //dataGridView2.Columns["df"].HeaderText = "Дата";
-            //dataGridView2.Columns["Lime_1"].Visible = false;
-            //dataGridView2.Columns["Lime_2"].Visible = false;
-            //dataGridView2.Columns["Cement_1"].Visible = false;
-            //dataGridView2.Columns["Cement_2"].Visible = false;
-            //dataGridView2.Columns["shift"].HeaderText = "смена";
-            dataGridView2.Columns["count_1"].HeaderText = "Кол-во массивов";
-            dataGridView2.Columns["mas"].HeaderText = "м.куб";
-            dataGridView2.Columns["Lime_sum"].HeaderText = "Известь, кг";
-            dataGridView2.Columns["Lime_sum"].DefaultCellStyle.Format = "N2";
-            dataGridView2.Columns["Cement_sum"].HeaderText = "Цемент, кг";
-            dataGridView2.Columns["Cement_sum"].DefaultCellStyle.Format = "N2";
-            dataGridView2.Columns["Gips"].HeaderText = "Гипс, кг";
-            dataGridView2.Columns["Sand"].HeaderText = "Песок, кг";
-            dataGridView2.Columns["Additive"].HeaderText = "Добавка, кг";
-            dataGridView2.Columns["alum"].HeaderText = "Алюминий, кг";
-            dataGridView2.Columns["drob"].HeaderText = "Шары мелющие, кг";
-            dataGridView2.Columns["brak"].HeaderText = "Шламовые массивы";
+            try
+            {
+                OpenCon();
 
-            //this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+                using (MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon))
+                {
+                    DataSet ds = new DataSet();
+                    ds.Reset();
+                    dD.Fill(ds, sql);
+                    dataGridView2.DataSource = ds.Tables[0];
+                    //dataGridView1.AutoResizeColumns();
+                    dataGridView2.Columns["data_52"].HeaderText = "Наименование рецепта";
+                    dataGridView2.Columns["data_52"].DisplayIndex = 0;
+                    //dataGridView2.Columns["df"].HeaderText = "Дата";
+                    //dataGridView2.Columns["Lime_1"].Visible = false;
+                    //dataGridView2.Columns["Lime_2"].Visible = false;
+                    //dataGridView2.Columns["Cement_1"].Visible = false;
+                    //dataGridView2.Columns["Cement_2"].Visible = false;
+                    //dataGridView2.Columns["shift"].HeaderText = "смена";
+                    dataGridView2.Columns["count_1"].HeaderText = "Кол-во массивов";
+                    dataGridView2.Columns["mas"].HeaderText = "м.куб";
+                    dataGridView2.Columns["Lime_sum"].HeaderText = "Известь, кг";
+                    dataGridView2.Columns["Lime_sum"].DefaultCellStyle.Format = "N2";
+                    dataGridView2.Columns["Cement_sum"].HeaderText = "Цемент, кг";
+                    dataGridView2.Columns["Cement_sum"].DefaultCellStyle.Format = "N2";
+                    dataGridView2.Columns["Gips"].HeaderText = "Гипс, кг";
+                    dataGridView2.Columns["Sand"].HeaderText = "Песок, кг";
+                    dataGridView2.Columns["Additive"].HeaderText = "Добавка, кг";
+                    dataGridView2.Columns["alum"].HeaderText = "Алюминий, кг";
+                    dataGridView2.Columns["drob"].HeaderText = "Шары мелющие, кг";
+                    dataGridView2.Columns["brak"].HeaderText = "Шламовые массивы";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally { CloseCon(); }
         }
 
         private void update_sum_2()
@@ -398,6 +425,7 @@ namespace report
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
             string start = dateTimePicker_start.Value.ToString("yyyy-MM-dd");
+            
             string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where ms.data_err >= '" + start + " 08:00:00' and ms.data_err < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')" +
 ") as brak";
             string sql3 = "(select ifnull(sum(sum_er),0) as brak from spslogger.error_mas as ms where ms.data_err >= '"+start+" 08:00:00' and ms.data_err < concat( date_add('" + finish+"', interval 1 day), ' 08:00:00'))";
@@ -416,34 +444,43 @@ namespace report
 "concat(cast(round((sum(data_193) + sum(data_199)), 2) as char(10)), ' / ', (round(((sum(data_193) + sum(data_199)) / (count(dbid)-" + sql3 + ") / '4.32'), 2))) as alum," +
 "concat(cast(round(((count(dbid)-" + sql3 + ") * '4.32' * '" + sh + "'), 2) as char(10)), ' / ', '" + sh + "') as drob, "+sql2+" from spslogger.mixreport as mr where " +
 " Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00') ";
-            // string sql = ("SELECT * FROM spslogger.configtable;");
-            MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon);
-            DataSet ds = new DataSet();
-            ds.Reset();
-            dD.Fill(ds, sql);
-            dataGridView3.DataSource = ds.Tables[0];
-            //dataGridView1.AutoResizeColumns();
-            //dataGridView3.Columns["data_52"].HeaderText = "Наименование рецепта";
-            //dataGridView3.Columns["df"].HeaderText = "Дата";
-            //dataGridView3.Columns["Lime_1"].Visible = false;
-            //dataGridView3.Columns["Lime_2"].Visible = false;
-            //dataGridView3.Columns["Cement_1"].Visible = false;
-            //dataGridView3.Columns["Cement_2"].Visible = false;
-            //dataGridView3.Columns["shift"].HeaderText = "смена";
-            dataGridView3.Columns["count_1"].HeaderText = "Кол-во массивов";
-            dataGridView3.Columns["mas"].HeaderText = "м.куб";
-            dataGridView3.Columns["Lime_sum"].HeaderText = "Известь, кг";
-            dataGridView3.Columns["Lime_sum"].DefaultCellStyle.Format = "N2";
-            dataGridView3.Columns["Cement_sum"].HeaderText = "Цемент, кг";
-            dataGridView3.Columns["Cement_sum"].DefaultCellStyle.Format = "N2";
-            dataGridView3.Columns["Gips"].HeaderText = "Гипс, кг";
-            dataGridView3.Columns["Sand"].HeaderText = "Песок, кг";
-            dataGridView3.Columns["Additive"].HeaderText = "Добавка, кг";
-            dataGridView3.Columns["alum"].HeaderText = "Алюминий, кг";
-            dataGridView3.Columns["drob"].HeaderText = "Шары мелющие, кг";
-            dataGridView3.Columns["brak"].HeaderText = "Шламовые массивы";
 
-            //this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            try
+            {
+                OpenCon();
+                using (MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon))
+                {
+                    DataSet ds = new DataSet();
+                    ds.Reset();
+                    dD.Fill(ds, sql);
+                    dataGridView3.DataSource = ds.Tables[0];
+                    //dataGridView1.AutoResizeColumns();
+                    //dataGridView3.Columns["data_52"].HeaderText = "Наименование рецепта";
+                    //dataGridView3.Columns["df"].HeaderText = "Дата";
+                    //dataGridView3.Columns["Lime_1"].Visible = false;
+                    //dataGridView3.Columns["Lime_2"].Visible = false;
+                    //dataGridView3.Columns["Cement_1"].Visible = false;
+                    //dataGridView3.Columns["Cement_2"].Visible = false;
+                    //dataGridView3.Columns["shift"].HeaderText = "смена";
+                    dataGridView3.Columns["count_1"].HeaderText = "Кол-во массивов";
+                    dataGridView3.Columns["mas"].HeaderText = "м.куб";
+                    dataGridView3.Columns["Lime_sum"].HeaderText = "Известь, кг";
+                    dataGridView3.Columns["Lime_sum"].DefaultCellStyle.Format = "N2";
+                    dataGridView3.Columns["Cement_sum"].HeaderText = "Цемент, кг";
+                    dataGridView3.Columns["Cement_sum"].DefaultCellStyle.Format = "N2";
+                    dataGridView3.Columns["Gips"].HeaderText = "Гипс, кг";
+                    dataGridView3.Columns["Sand"].HeaderText = "Песок, кг";
+                    dataGridView3.Columns["Additive"].HeaderText = "Добавка, кг";
+                    dataGridView3.Columns["alum"].HeaderText = "Алюминий, кг";
+                    dataGridView3.Columns["drob"].HeaderText = "Шары мелющие, кг";
+                    dataGridView3.Columns["brak"].HeaderText = "Шламовые массивы";
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally { CloseCon(); }
         }
 
         private void dataGridView_Formatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -485,32 +522,21 @@ namespace report
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            string sql = ("SELECT * FROM spslogger.configtable");
-            //try
-            //{
             picker();
-            OpenCon();
-            //    msd = new MySqlCommand(sql, mCon);
-            //    if (msd.ExecuteNonQuery() >= 1)
-            //    {
             update_report();
             update_sum();
             update_sum_2();
+            
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            
             foreach (DataGridViewRow item in dataGridView1.Rows)
             {
-
                 if (item.Cells[1].Value.ToString() == "ночь")
                 {
                     item.DefaultCellStyle.BackColor = Color.LightBlue;
                 }
                 else item.DefaultCellStyle.BackColor = Color.LightYellow;
-
-
             }
-
-
-
         }
 
         private void Button7_Click(object sender, EventArgs e)
