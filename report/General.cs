@@ -560,23 +560,6 @@ namespace report
 
         }
 
-        private void DataGridView1_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
-        {
-
-            
-        }
-
-        private void DataGridView1_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
-        {
-            //foreach (DataGridViewRow item in dataGridView1.Rows)
-            //{
-
-            //    if (item.Cells[1].Value.ToString() == "ночь")
-            //        item.DefaultCellStyle.BackColor = Color.LightBlue;
-
-            //}
-        }
-
         private void Button1_Click(object sender, EventArgs e)
         {
             picker(1);
