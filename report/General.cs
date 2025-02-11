@@ -13,7 +13,7 @@ namespace report
     public partial class General : Form
     {
         //MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=192.168.37.101; port=3306; username=%user_1; password=20112004; charset=utf8 ");
-        MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=192.168.100.7; port=3306; username=%user_2; password=20112004; charset=utf8 ");
+        MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=192.168.100.24; port=3306; username=%user_2; password=20112004; charset=utf8 ");
         //MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=localhost; port=3306; username=root; password=20112004; charset=utf8 ");
         //MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=localhost; port=3306; username=sss_root; password=12345; charset=utf8;SslMode=none;Allow User Variables=True ");
         MySqlCommand msd;
