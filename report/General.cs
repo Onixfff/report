@@ -6,37 +6,75 @@ using System.Linq;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
 using System.Globalization;
+using ClassLibraryGetIp;
+using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Windows.Forms.VisualStyles;
 
 
 namespace report
 {
     public partial class General : Form
     {
+        bool isCompliteTakeServerIp = false;
+        Main mainInstance = new Main();
+        MySqlConnection mCon;
+        string connectionString;
         //MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=192.168.37.101; port=3306; username=%user_1; password=20112004; charset=utf8 ");
-        MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=192.168.100.24; port=3306; username=%user_2; password=20112004; charset=utf8 ");
         //MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=localhost; port=3306; username=root; password=20112004; charset=utf8 ");
         //MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=localhost; port=3306; username=sss_root; password=12345; charset=utf8;SslMode=none;Allow User Variables=True ");
         MySqlCommand msd;
+        
         public General()
         {
             InitializeComponent();
         }
-        private void CloseCon()
+
+        private async Task<bool> ChangeMconAsync()
+        {
+            var ip = await mainInstance.GetIp("operator");
+            
+            try
+            {
+                if (ip.GetIp() != null)
+                {
+                    connectionString = $"Database=spslogger; Server={ip.GetIp()}; port=3306; username=%user_2; password=20112004; charset=utf8";
+                    mCon = new MySqlConnection(connectionString);
+                    isCompliteTakeServerIp = true;
+                }
+            }
+            catch(InvalidOperationException)
+            {
+                isCompliteTakeServerIp = false;
+                MessageBox.Show("Не получилось соеденится с сервером. Попробуйте позже...");
+            }
+            catch (Exception)
+            {
+                isCompliteTakeServerIp = false;
+                MessageBox.Show("Непредвиденная ошибка. Повторите попытку позже или свяжитесь с администратором");
+            }
+
+            return isCompliteTakeServerIp;
+        }
+
+        private async void CloseConAsync(MySqlConnection mCon)
         {
             if (mCon.State == ConnectionState.Open)
             {
-                mCon.Close();
+                await mCon.CloseAsync();
             }
         }
-        private void OpenCon()
+        
+        private async Task<MySqlConnection> OpenConAsync()
         {
+            var mCon = new MySqlConnection(connectionString);
             string messageError = "Unknown system variable 'lower_case_table_names'";
             
             if (mCon.State == ConnectionState.Closed)
             {
                 try
                 {
-                    mCon.Open();
+                    await mCon.OpenAsync();
                 }
                 catch(MySqlException ex)
                 {
@@ -48,9 +86,10 @@ namespace report
                 catch (Exception ex)
                 {
                     MessageBox.Show("Нет соединения с сервером... попробуйте позже");
-                    return;
                 }
             }
+
+            return mCon;
         }
         private void picker()
         {
@@ -74,7 +113,7 @@ namespace report
             dateTimePicker_finish.Text = date2.ToString();
         }
 
-        private void update_report()
+        private async void update_reportAsync()
         {
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
@@ -113,12 +152,13 @@ namespace report
 #endif
             try
             {
-                OpenCon();
+                var mCon = await OpenConAsync();
+
                 using (MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon))
                 {
                     DataSet ds = new DataSet();
                     ds.Reset();
-                    dD.Fill(ds, sql);
+                    await dD.FillAsync(ds, sql);
                     dataGridView1.DataSource = ds.Tables[0];
                     //dataGridView1.AutoResizeColumns();
                     dataGridView1.Columns["df"].HeaderText = "Дата";
@@ -139,26 +179,29 @@ namespace report
                     dataGridView1.Columns["alum"].HeaderText = "Алюминий, кг";
                     dataGridView1.Columns["drob"].HeaderText = "Шары мелющие, кг";
                     dataGridView1.Columns["brak"].HeaderText = "Шламовые массивы";
+
+                    foreach (DataGridViewRow item in dataGridView1.Rows)
+                    {
+                        if (item.Cells[1].Value.ToString() == "ночь")
+                        {
+                            item.DefaultCellStyle.BackColor = Color.LightBlue;
+                        }
+                        else
+                        {
+                            item.DefaultCellStyle.BackColor = Color.LightYellow;
+                        }
+                    }
                 }
+            }
+            catch (MySqlException)
+            {
+                MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже");
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
-            finally { CloseCon(); }
-
-            foreach (DataGridViewRow item in dataGridView1.Rows)
-            {
-
-                if (item.Cells[1].Value.ToString() == "ночь")
-                {
-                    item.DefaultCellStyle.BackColor = Color.LightBlue;
-                }
-                else
-                {
-                    item.DefaultCellStyle.BackColor = Color.LightYellow;
-                }
-            }
+            finally { CloseConAsync(mCon); }
         }
 
         private void update_report_sm()
@@ -281,7 +324,7 @@ namespace report
         }
 
 
-        private void update_report_su()
+        private void Load_report_su()
         {
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
@@ -304,8 +347,11 @@ namespace report
             // string sql = ("SELECT * FROM spslogger.configtable;");
             MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon);
             DataSet ds = new DataSet();
-            ds.Reset();
             dD.Fill(ds, sql);
+        }
+
+        private void UpdateUiReportSu(DataSet ds)
+        {
             dataGridView1.DataSource = ds.Tables[0];
             //dataGridView1.AutoResizeColumns();
             //dataGridView1.Columns["data_52"].HeaderText = "Наименование рецепта";
@@ -339,12 +385,9 @@ namespace report
                 }
                 else item.DefaultCellStyle.BackColor = Color.LightYellow;
             }
-
-
-            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
         }
 
-        private void update_sum()
+        private async void update_sumAsync()
             
         {
             string sh = textBox1.Text.ToString();
@@ -382,13 +425,14 @@ namespace report
 
             try
             {
-                OpenCon();
+                var mCon = await OpenConAsync();
 
                 using (MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon))
                 {
                     DataSet ds = new DataSet();
                     ds.Reset();
-                    dD.Fill(ds, sql);
+                    await dD.FillAsync(ds, sql);
+
                     dataGridView2.DataSource = ds.Tables[0];
                     //dataGridView1.AutoResizeColumns();
                     dataGridView2.Columns["data_52"].HeaderText = "Наименование рецепта";
@@ -413,11 +457,15 @@ namespace report
                     dataGridView2.Columns["brak"].HeaderText = "Шламовые массивы";
                 }
             }
+            catch (MySqlException)
+            {
+                MessageBox.Show("Ошибка получения данных. Повторите операцию позже");
+            }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
-            finally { CloseCon(); }
+            finally { CloseConAsync(mCon); }
         }
 
         private void update_sum_2()
@@ -447,7 +495,7 @@ namespace report
 
             try
             {
-                OpenCon();
+                OpenConAsync();
                 using (MySqlDataAdapter dD = new MySqlDataAdapter(sql, mCon))
                 {
                     DataSet ds = new DataSet();
@@ -520,14 +568,13 @@ namespace report
         }
 
 
-        private void Form1_Load(object sender, EventArgs e)
+        private async void Form1_Load(object sender, EventArgs e)
         {
+
             picker();
-            update_report();
-            update_sum();
+            update_reportAsync();
+            update_sumAsync();
             update_sum_2();
-            
-            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             
             foreach (DataGridViewRow item in dataGridView1.Rows)
             {
@@ -537,16 +584,34 @@ namespace report
                 }
                 else item.DefaultCellStyle.BackColor = Color.LightYellow;
             }
+
+            Cursor.Current = Cursors.Default;
+
         }
 
-        private void Button7_Click(object sender, EventArgs e)
+        private async void Button7_Click(object sender, EventArgs e)
         {
+            bool isComlite;
+
+            if (isCompliteTakeServerIp == false)
+            {
+                isComlite = await ChangeMconAsync();
+
+                if (isComlite == false)
+                {
+                    return;
+                }
+            }
+
+            Cursor.Current = Cursors.WaitCursor;
+
             picker();
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
-        
-    }
+
+            Cursor.Current = Cursors.Default;
+        }
 
         private void DateTimePicker_start_ValueChanged(object sender, EventArgs e)
         {
@@ -560,101 +625,158 @@ namespace report
 
         }
 
+        private enum Mount
+        {
+            Январь,
+            Февраль,
+            Март,
+            Апрель,
+            Май,
+            Июнь,
+            Июль,
+            Август,
+            Сентябрь,
+            Октябрь,
+            Ноябрь,
+            Декабрь
+        };
+
+        private async void ButtonMonth_Click(object sender, EventArgs e)
+        {
+            bool isComlite;
+
+            if (isCompliteTakeServerIp == false)
+            {
+                isComlite = await ChangeMconAsync();
+
+                if (isComlite == false)
+                {
+                    return;
+                }
+            }
+            try
+            {
+                Cursor.Current = Cursors.WaitCursor;
+
+                string click = ((Button)sender).Text;
+
+                if (Enum.TryParse(click, true, out Mount mount))
+                {
+                    picker((int)mount + 1);
+
+                    update_sumAsync();
+                    update_reportAsync();
+                    update_sum_2();
+                } 
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show("Непредвиденная ошибка. Повторите попытку позже...");
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
+        }
+
+        #region бывшие методы для кнопок месяца
         private void Button1_Click(object sender, EventArgs e)
         {
             picker(1);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button2_Click(object sender, EventArgs e)
         {
             picker(2);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button3_Click(object sender, EventArgs e)
         {
             picker(3);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button4_Click(object sender, EventArgs e)
         {
             picker(4);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button5_Click(object sender, EventArgs e)
         {
             picker(5);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button12_Click(object sender, EventArgs e)
         {
             picker(6);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button6_Click(object sender, EventArgs e)
         {
             picker(7);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button8_Click(object sender, EventArgs e)
         {
             picker(8);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button9_Click(object sender, EventArgs e)
         {
             picker(9);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button10_Click(object sender, EventArgs e)
         {
             picker(10);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button11_Click(object sender, EventArgs e)
         {
             picker(11);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
 
         private void Button13_Click(object sender, EventArgs e)
         {
             picker(12);
-            update_sum();
-            update_report();
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
         }
+
+        #endregion
 
         private void DataGridView1_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
@@ -668,23 +790,69 @@ namespace report
             //}
         }
 
-        private void Button14_Click(object sender, EventArgs e)
+        private async void Button14_Click(object sender, EventArgs e)
         {
-            update_sum();
-            update_report();
+            bool isComlite;
+
+            if (isCompliteTakeServerIp == false)
+            {
+                isComlite = await ChangeMconAsync();
+
+                if (isComlite == false)
+                {
+                    return;
+                }
+            }
+
+            Cursor.Current = Cursors.WaitCursor;
+
+            update_sumAsync();
+            update_reportAsync();
             update_sum_2();
+
+            Cursor.Current = Cursors.Default;
         }
 
-        private void Button15_Click(object sender, EventArgs e)
+        private async void Button15_Click(object sender, EventArgs e)
         {
+            bool isComlite;
+
+            if (isCompliteTakeServerIp == false)
+            {
+                isComlite = await ChangeMconAsync();
+
+                if (isComlite == false)
+                {
+                    return;
+                }
+            }
+
+            Cursor.Current = Cursors.WaitCursor;
+
             update_report_sm();
 
+            Cursor.Current = Cursors.Default;
         }
 
-        private void Button16_Click(object sender, EventArgs e)
+        private async void Button16_Click(object sender, EventArgs e)
         {
-            update_report_su();
+            bool isComlite;
 
+            if (isCompliteTakeServerIp == false)
+            {
+                isComlite = await ChangeMconAsync();
+
+                if (isComlite == false)
+                {
+                    return;
+                }
+            }
+
+            Cursor.Current = Cursors.WaitCursor;
+
+            Load_report_su();
+
+            Cursor.Current = Cursors.Default;
         }
         private void update_brak()
         {
@@ -733,14 +901,46 @@ namespace report
 
         }
 
-        private void Button17_Click(object sender, EventArgs e)
+        private async void Button17_Click(object sender, EventArgs e)
         {
+            bool isComlite;
+
+            if (isCompliteTakeServerIp == false)
+            {
+                isComlite = await ChangeMconAsync();
+
+                if (isComlite == false)
+                {
+                    return;
+                }
+            }
+
+            Cursor.Current = Cursors.WaitCursor;
+
             update_brak();
+
+            Cursor.Current = Cursors.Default;
         }
 
-        private void Button18_Click(object sender, EventArgs e)
+        private async void Button18_Click(object sender, EventArgs e)
         {
+            bool isComlite;
+
+            if (isCompliteTakeServerIp == false)
+            {
+                isComlite = await ChangeMconAsync();
+
+                if (isComlite == false)
+                {
+                    return;
+                }
+            }
+
+            Cursor.Current = Cursors.WaitCursor;
+
             update_report_month();
+
+            Cursor.Current = Cursors.Default;
         }
     }
 }
