@@ -132,6 +132,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enum\EnumMount.cs" />
+    <Compile Include="Models\ConnectionPool.cs" />
+    <Compile Include="Models\DataSetInformation.cs" />
     <Compile Include="General.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -212,5 +215,6 @@
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
