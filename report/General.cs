@@ -159,7 +159,9 @@ namespace report
             string startDate = dateTimePicker_start.Value.ToString("yyyy-MM-dd");
             string finishDate = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
 
-            for (int i = 1; i <= 12; i++)
+            int maxMountComplite = dateTimePicker_finish.Value.Month;
+
+            for (int i = 1; i <= maxMountComplite; i++)
             {
                 int year = DateTime.Now.Year;
                 int firstDay = 1;
