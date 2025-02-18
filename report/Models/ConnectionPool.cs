@@ -13,7 +13,7 @@ namespace report.Models
         private readonly ConcurrentBag<MySqlConnection> _connectionPool;
         private readonly int _maxConnections;
 
-        public ConnectionPool(string connectionString, int initialSize = 6, int maxConnections = 10)
+        public ConnectionPool(string connectionString, int initialSize = 3, int maxConnections = 4)
         {
             _connectionString = connectionString;
             _connectionPool = new ConcurrentBag<MySqlConnection>();
@@ -56,7 +56,14 @@ namespace report.Models
                         }
                     }
                 }
-                return connection;
+                else if(connection.State == ConnectionState.Open)
+                {
+                    return connection;
+                }
+                else
+                {
+                    connection.Dispose();
+                }
             }
 
             // Если пул пуст и мы можем создать новое подключение, то создаем его
@@ -97,10 +104,12 @@ namespace report.Models
         }
 
         // Возвращаем подключение в пул
-        public void ReturnConnection(MySqlConnection connection)
+        public async void ReturnConnection(MySqlConnection connection)
         {
             if (connection != null && connection.State == ConnectionState.Open)
             {
+                await connection.CloseAsync();
+
                 _connectionPool.Add(connection);
             }
         }

@@ -10,7 +10,6 @@ using ClassLibraryGetIp;
 using System.Threading.Tasks;
 using report.Enum;
 using System.Collections.Generic;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using report.Models;
 
 
@@ -24,10 +23,10 @@ namespace report
         private string _connectionString;
         private ConnectionPool pool;
 
-
         private DataSet _reportsSm = new DataSet();
         private DataSet _reportsSu = new DataSet();
         private DataSet _reportsMounth = new DataSet();
+        private DataSet _reportBreak = new DataSet();
 
         private DataSet _reports = new DataSet();
         private DataSet _sum = new DataSet();
@@ -39,7 +38,8 @@ namespace report
         
         private List<DataSetInformation> _datasetInformationReportsSm = new List<DataSetInformation>();
         private List<DataSetInformation> _dataSetInformationReportsSu = new List<DataSetInformation>();
-        private List<DataSetInformation> _datasetInformationReportMonth = new List<DataSetInformation>();
+        private List<DataSetInformation> _datasetInformationReportsMonth = new List<DataSetInformation>();
+        private List<DataSetInformation> _datasetInformationReportsBreak = new List<DataSetInformation>();
 
         
         //MySqlConnection mCon = new MySqlConnection("Database=spslogger; Server=192.168.37.101; port=3306; username=%user_1; password=20112004; charset=utf8 ");
@@ -60,7 +60,7 @@ namespace report
             {
                 if (ip.GetIp() != null)
                 {
-                    _connectionString = $"Database=spslogger; Server={ip.GetIp()}; port=3306; username=%user_2; password=20112004; charset=utf8";
+                    _connectionString = $"Database=spslogger; Server={ip.GetIp()}; port=3306; username=%user_2; password=20112004; charset=utf8;";
                     _mCon = new MySqlConnection(_connectionString);
                     _isCompliteTakeServerIp = true;
                 }
@@ -77,48 +77,6 @@ namespace report
             }
 
             return _isCompliteTakeServerIp;
-        }
-
-        private async Task CloseConAsync(MySqlConnection mCon)
-        {
-            if (mCon.State == ConnectionState.Open)
-            {
-                await mCon.CloseAsync();
-            }
-        }
-        
-        private async Task<MySqlConnection> OpenConAsync()
-        {
-            var mCon = new MySqlConnection(_connectionString);
-            string messageError = "Unknown system variable 'lower_case_table_names'";
-            
-            if (mCon.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    await mCon.OpenAsync();
-                }
-                catch(MySqlException ex)
-                {
-                    // Если ошибка связана с 'lower_case_table_names', игнорируем её и не предпринимаем попыток повторного подключения
-                    if (ex.Message.Contains(messageError))
-                    {
-                        // Просто логируем или игнорируем ошибку
-                        Console.WriteLine("Warning: Ignored MySQL error: " + ex.Message);
-                        return mCon; // Возвращаем соединение, несмотря на ошибку
-                    }
-
-                    // Для других ошибок выводим сообщение
-                    MessageBox.Show(ex.Message);
-                    return null; // Возвращаем null, если ошибка критична
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Нет соединения с сервером... попробуйте позже");
-                }
-            }
-
-            return mCon;
         }
 
         private void picker()
@@ -225,6 +183,7 @@ namespace report
                 var resultLoadSm = LoadReportSmAsync(_reportsSm, start, finish, sh, tableName);
                 var resultLoadSu = LoadReportSuAsync(_reportsSu, start, finish, sh, tableName);
                 var resultLoadMonth = LoadReportMonthAsync(_reportsMounth, start, finish, sh, tableName);
+                var resultLoadBreak = LoadBreakAsync(_reportBreak, start, finish, sh, tableName);
                 
                 var resultLoadReport = LoadReportAsync(_reports, start, finish, sh, tableName);
                 var resultLoadSum = LoadSumAsync(_sum, start, finish, sh, tableName);
@@ -234,15 +193,16 @@ namespace report
                 // Пока БД работает, UI остается отзывчивым
 
                 // Дожидаемся завершения всех задач
-                var results = await Task.WhenAll(resultLoadSm, resultLoadSu, resultLoadMonth, resultLoadReport, resultLoadSum, resultLoadSum2);
+                var results = await Task.WhenAll(resultLoadSm, resultLoadSu, resultLoadMonth, resultLoadReport, resultLoadSum, resultLoadSum2, resultLoadBreak);
 
                 // Добавляем полученные данные в коллекции
                 if (results[0] != null) _datasetInformationReportsSm.Add(results[0]);
                 if (results[1] != null) _dataSetInformationReportsSu.Add(results[1]);
-                if (results[2] != null) _datasetInformationReportMonth.Add(results[2]);
+                if (results[2] != null) _datasetInformationReportsMonth.Add(results[2]);
                 if (results[3] != null) _datasetInformationReport.Add(results[3]);
                 if (results[4] != null) _dataSetInformationSum.Add(results[4]);
                 if (results[5] != null) _dataSetInformationSum2.Add(results[5]);
+                if (results[6] != null) _datasetInformationReportsBreak.Add(results[6]);
             }
         }
 
@@ -289,6 +249,12 @@ namespace report
                 // Получаем подключение
                 mCon = await pool.GetConnectionAsync();
 
+                if (mCon.State != ConnectionState.Open)
+                {
+                    mCon.Dispose();
+                    mCon = await pool.GetConnectionAsync();
+                }
+
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
@@ -324,9 +290,10 @@ namespace report
                         );
                 }
             }
-            catch (MySqlException)
+            catch (MySqlException ex)
             {
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже")));
+                Console.WriteLine(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
             }
             catch (Exception ex)
             {
@@ -392,6 +359,12 @@ namespace report
             {
                 mCon = await pool.GetConnectionAsync();
 
+                if (mCon.State != ConnectionState.Open)
+                {
+                    mCon.Dispose();
+                    mCon = await pool.GetConnectionAsync();
+                }
+
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
@@ -427,15 +400,23 @@ namespace report
                         );
                 }
             }
-            catch (MySqlException)
+            catch (MySqlException ex)
             {
-                MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже");
+                Console.WriteLine(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
             }
-            finally { if (mCon != null && mCon.State != ConnectionState.Closed) { CloseConAsync(mCon); } }
+            finally 
+            { 
+                if (mCon != null) 
+                {
+                    // Возвращаем подключение в пул после использования
+                    pool.ReturnConnection(mCon);
+                } 
+            }
 
             return dsInformation;
 
@@ -490,6 +471,12 @@ namespace report
             {
                 mCon = await pool.GetConnectionAsync();
 
+                if (mCon.State != ConnectionState.Open)
+                {
+                    mCon.Dispose();
+                    mCon = await pool.GetConnectionAsync();
+                }
+
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
@@ -525,15 +512,23 @@ namespace report
                         );
                 }
             }
-            catch (MySqlException)
+            catch (MySqlException ex)
             {
-                MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже");
+                Console.WriteLine(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
             }
-            finally { if (mCon != null && mCon.State != ConnectionState.Closed) { CloseConAsync(mCon); } }
+            finally
+            {
+                if (mCon != null)
+                {
+                    // Возвращаем подключение в пул после использования
+                    pool.ReturnConnection(mCon);
+                }
+            }
 
             return dsInformation;
 
@@ -591,6 +586,12 @@ namespace report
             {
                 mCon = await pool.GetConnectionAsync();
 
+                if (mCon.State != ConnectionState.Open)
+                {
+                    mCon.Dispose();
+                    mCon = await pool.GetConnectionAsync();
+                }
+
                 // string sql = ("SELECT * FROM spslogger.configtable;");
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
@@ -627,15 +628,23 @@ namespace report
                     );
                 }
             }
-            catch (MySqlException)
+            catch (MySqlException ex)
             {
-                MessageBox.Show("Ошибка получения данных. Повторите операцию позже");
+                Console.WriteLine(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
             }
-            finally { if (mCon != null && mCon.State != ConnectionState.Closed) { CloseConAsync(mCon); } }
+            finally
+            {
+                if (mCon != null)
+                {
+                    // Возвращаем подключение в пул после использования
+                    pool.ReturnConnection(mCon);
+                }
+            }
 
             return dsInformation;
         }
@@ -669,22 +678,86 @@ namespace report
             ChangeColorReport();
         }
 
-        private void update_brak()
+        private async Task<DataSetInformation> LoadBreakAsync(DataSet ds, string start, string finish, string sh, string tableName)
         {
-            //string sh = textBox1.Text.ToString();
-            string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
-            string start = dateTimePicker_start.Value.ToString("yyyy-MM-dd");
-
             string sql = "SELECT *" +
 
   "from spslogger.error_mas where data_err >= '" + start + " 08:00:00' and data_err < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00') ";
 
-            // string sql = ("SELECT * FROM spslogger.configtable;");
-            MySqlDataAdapter dD = new MySqlDataAdapter(sql, _mCon);
-            DataSet ds = new DataSet();
-            ds.Reset();
-            dD.Fill(ds, sql);
-            dataGridView1.DataSource = ds.Tables[0];
+            DataSetInformation dsInformation = null;
+
+            MySqlConnection mCon = new MySqlConnection();
+
+            try
+            {
+                mCon = await pool.GetConnectionAsync();
+
+                if (mCon.State != ConnectionState.Open)
+                {
+                    mCon.Dispose();
+                    mCon = await pool.GetConnectionAsync();
+                }
+
+                // string sql = ("SELECT * FROM spslogger.configtable;");
+                using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
+                using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                {
+                    DataTable dt = new DataTable();
+                    // Добавляем столбцы в таблицу, основываясь на схеме reader
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        dt.Columns.Add(reader.GetName(i));
+                    }
+
+                    // Чтение данных
+                    while (await reader.ReadAsync())  // Асинхронное чтение данных
+                    {
+                        DataRow row = dt.NewRow();
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            // Проверяем, что столбец существует, и если он пустой, то обрабатываем корректно
+                            row[i] = await reader.IsDBNullAsync(i) ? DBNull.Value : reader.GetValue(i);
+                        }
+                        dt.Rows.Add(row);
+                    }
+
+                    dt.TableName = tableName;  // Назначение имени таблицы
+                    ds.Tables.Add(dt);
+
+                    dsInformation = new DataSetInformation(
+                    tableName,
+                    ds.Tables[tableName],
+                    sh,
+                    start,
+                    finish,
+                    DateTime.Now
+                    );
+                }
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
+            }
+            catch (Exception ex)
+            {
+                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
+            }
+            finally
+            {
+                if (mCon != null)
+                {
+                    // Возвращаем подключение в пул после использования
+                    pool.ReturnConnection(mCon);
+                }
+            }
+
+            return dsInformation;
+        }
+
+        private void UpdateUiBreak(DataTable ds)
+        {
+            dataGridView1.DataSource = ds;
 
             dataGridView1.Columns["id"].Visible = false;
             dataGridView1.Columns["data_err"].HeaderText = "Дата";
@@ -694,22 +767,8 @@ namespace report
             dataGridView1.Columns["sum_er"].HeaderText = "Кол-во массивов";
             dataGridView1.Columns["sum_er"].Width = 50;
             dataGridView1.Columns["comments"].HeaderText = "Причина";
-            //dataGridView1.AutoResizeColumns();
 
-
-
-            //foreach (DataGridViewRow item in dataGridView1.Rows)
-            //{
-
-            //    if (item.Cells[1].Value.ToString() == "ночь")
-            //    {
-            //        item.DefaultCellStyle.BackColor = Color.LightBlue;
-            //    }
-            //    else item.DefaultCellStyle.BackColor = Color.LightYellow;
-
-
-            //}
-            //this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            ChangeColorReport();
         }
 
         private void ChangeColorReport()
@@ -765,6 +824,12 @@ namespace report
             {
                 mCon = await pool.GetConnectionAsync();
 
+                if (mCon.State != ConnectionState.Open)
+                {
+                    mCon.Dispose();
+                    mCon = await pool.GetConnectionAsync();
+                }
+
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
@@ -803,13 +868,14 @@ namespace report
                 }
 
             }
-            catch (MySqlException)
+            catch (MySqlException ex)
             {
-                MessageBox.Show("Ошибка получения данных. Повторите операцию позже");
+                Console.WriteLine(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
             }
             finally
             {
@@ -880,6 +946,12 @@ namespace report
             {
                 mCon = await pool.GetConnectionAsync();
 
+                if (mCon.State != ConnectionState.Open)
+                {
+                    mCon.Dispose();
+                    mCon = await pool.GetConnectionAsync();
+                }
+
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
@@ -915,13 +987,14 @@ namespace report
                         );
                 }
             }
-            catch (MySqlException)
+            catch (MySqlException ex)
             {
-                MessageBox.Show("Ошибка получения данных. Повторите операцию позже");
+                Console.WriteLine(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
             }
             finally
             {
@@ -1018,9 +1091,6 @@ namespace report
 
             pool = new ConnectionPool(_connectionString);
 
-            // Устанавливаем курсор в "ожидание"
-            this.UseWaitCursor = true;
-
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
             string start = dateTimePicker_start.Value.ToString("yyyy-MM-dd");
@@ -1034,7 +1104,6 @@ namespace report
 
             await Task.Run(() => LoadFullDateYear());
             SetControlsEnabled(true);
-            this.UseWaitCursor = false;
 
         }
 
@@ -1348,20 +1417,6 @@ namespace report
 
             Cursor.Current = Cursors.WaitCursor;
 
-            string sh = textBox1.Text.ToString();
-            string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
-            string start = dateTimePicker_start.Value.ToString("yyyy-MM-dd");
-
-            string tableName = $"{sh}: {start} - {finish}";
-
-            foreach (var item in _datasetInformationReportsSm)
-            {
-                if (item.TableName == tableName && item.Sh == sh)
-                {
-                    UpdateUiReportSm(item.DataTable);
-                }
-            }
-
         }
 
         private async void Button16_Click(object sender, EventArgs e)
@@ -1410,10 +1465,19 @@ namespace report
                 }
             }
 
-            Cursor.Current = Cursors.WaitCursor;
+            string sh = textBox1.Text.ToString();
+            string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
+            string start = dateTimePicker_start.Value.ToString("yyyy-MM-dd");
 
-            update_brak();
+            string tableName = $"{sh}: {start} - {finish}";
 
+            foreach (var item in _datasetInformationReportsBreak)
+            {
+                if (item.TableName == tableName && item.Sh == sh)
+                {
+                    UpdateUiBreak(item.DataTable);
+                }
+            }
         }
 
         private async void Button18_Click(object sender, EventArgs e)
@@ -1452,6 +1516,18 @@ namespace report
         {
             // Рекурсивно проверяем все элементы управления на форме и во всех контейнерах
             SetControlsRecursive(this, enabled);
+            
+            if(enabled == false)
+            {
+                // Устанавливаем курсор в "ожидание"
+                this.UseWaitCursor = true;
+            }
+            else
+            {
+                //Уберает ожидание у курсора
+                this.UseWaitCursor = false;
+            }
+
         }
 
         private void SetControlsRecursive(Control parent, bool enabled)
@@ -1469,6 +1545,11 @@ namespace report
                     SetControlsRecursive(control, enabled);
                 }
             }
+        }
+
+        private void dataGridView1_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            ChangeColorReport();
         }
     }
 }
