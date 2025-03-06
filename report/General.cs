@@ -1043,6 +1043,7 @@ namespace report
             if ((dataGridView.Columns[e.ColumnIndex].Name == "Cement_sum" || dataGridView.Columns[e.ColumnIndex].Name == "Lime_sum" || dataGridView.Columns[e.ColumnIndex].Name == "Sand") && e.Value != null)
             {
                 string originalValue = e.Value.ToString(); // Получаем исходное строковое значение
+
                 if (originalValue.Contains('/')) // Проверяем, содержит ли строка символ '/'
                 {
                     string[] parts = originalValue.Split('/'); // Разделяем строку по символу '/'
@@ -1057,6 +1058,7 @@ namespace report
                             if (double.TryParse(firstPart, NumberStyles.Any, CultureInfo.InvariantCulture, out number))
                             {
                                 // Форматируем первую часть как число с двумя десятичными знаками
+                                int truncated = (int)Math.Truncate(number);
                                 firstPart = string.Format("{0:N2}", number);
                             }
                             // Собираем строку обратно с отформатированной первой частью
@@ -1067,6 +1069,27 @@ namespace report
                         {
                             e.FormattingApplied = false; // Если конвертация не удалась, форматирование не применяется
                         }
+                    }
+                }
+                else if (originalValue.Contains(','))
+                {
+                    try
+                    {
+                        string numberFormat = originalValue.Replace(',', '.'); // Заменяем , на .
+                        double number;
+
+                        if (double.TryParse(numberFormat, NumberStyles.Any, CultureInfo.InvariantCulture, out number))
+                        {
+                            numberFormat = ((long)Math.Truncate(number)).ToString();
+                        }
+
+                        // Собираем строку обратно с отформатированной первой частью
+                        e.Value = numberFormat;
+                        e.FormattingApplied = true; // Указываем, что форматирование было применено
+                    }
+                    catch (FormatException)
+                    {
+                        e.FormattingApplied = false; // Если конвертация не удалась, форматирование не применяется
                     }
                 }
             }
@@ -1164,11 +1187,6 @@ namespace report
             //update_sum();
             //update_report();
            
-        }
-
-        private void DataGridView2_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
-        {
-
         }
 
         private async void ButtonMonth_Click(object sender, EventArgs e)
@@ -1551,6 +1569,7 @@ namespace report
 
         private void dataGridView1_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
+            dataGridView_Formatting(sender, e);
             ChangeColorReport();
         }
     }

@@ -325,7 +325,6 @@
             this.dataGridView2.Size = new System.Drawing.Size(1878, 160);
             this.dataGridView2.TabIndex = 2;
             this.dataGridView2.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dataGridView_Formatting);
-            this.dataGridView2.RowPrePaint += new System.Windows.Forms.DataGridViewRowPrePaintEventHandler(this.DataGridView2_RowPrePaint);
             // 
             // dataGridView3
             // 
@@ -341,7 +340,6 @@
             this.dataGridView3.Size = new System.Drawing.Size(1878, 60);
             this.dataGridView3.TabIndex = 2;
             this.dataGridView3.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dataGridView_Formatting);
-            this.dataGridView3.RowPrePaint += new System.Windows.Forms.DataGridViewRowPrePaintEventHandler(this.DataGridView2_RowPrePaint);
             // 
             // label1
             // 
