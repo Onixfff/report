@@ -68,7 +68,7 @@
     </Reference>
     <Reference Include="ClassLibraryGetIp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b879ace4ea7c97e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\..\c#\ClassLibraryGetIp\ClassLibraryGetIp\bin\Debug\ClassLibraryGetIp.dll</HintPath>
+      <HintPath>..\..\..\..\Общезаводская программа — копия\Aeroblock\Library\ClassLibraryGetIp\ClassLibraryGetIp\bin\Debug\ClassLibraryGetIp.dll</HintPath>
     </Reference>
     <Reference Include="Google.Protobuf, Version=3.11.4.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\Общезаводская программа — копия\Aeroblock\packages\Google.Protobuf.3.11.4\lib\net45\Google.Protobuf.dll</HintPath>
@@ -87,7 +87,7 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\..\c#\ClassLibraryGetIp\ClassLibraryGetIp\bin\Debug\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\Общезаводская программа — копия\Aeroblock\Library\ClassLibraryGetIp\ClassLibraryGetIp\bin\Debug\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Renci.SshNet, Version=2020.0.0.0, Culture=neutral, PublicKeyToken=1cee9f8bde3db106, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\Общезаводская программа — копия\Aeroblock\packages\SSH.NET.2020.0.0\lib\net40\Renci.SshNet.dll</HintPath>
