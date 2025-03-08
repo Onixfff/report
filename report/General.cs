@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using report.Enum;
 using System.Collections.Generic;
 using report.Models;
+using System.Diagnostics;
 
 
 namespace report
@@ -69,6 +70,7 @@ namespace report
             {
                 _isCompliteTakeServerIp = false;
                 MessageBox.Show("Не получилось соеденится с сервером. Попробуйте позже...");
+                this.Close();
             }
             catch (Exception)
             {
@@ -113,15 +115,24 @@ namespace report
             var taskLoadSum = LoadSumAsync(_sum, start, finish, sh, tableName);
             var taskLoadSum2 = LoadSum2Async(_sum2, start, finish, sh, tableName);
 
+            var resultLoadSm = LoadReportSmAsync(_reportsSm, start, finish, sh, tableName);
+            var resultLoadSu = LoadReportSuAsync(_reportsSu, start, finish, sh, tableName);
+            var resultLoadMonth = LoadReportMonthAsync(_reportsMounth, start, finish, sh, tableName);
+            var resultLoadBreak = LoadBreakAsync(_reportBreak, start, finish, sh, tableName);
+
             // Пока БД работает, UI остается отзывчивым
 
             // Дожидаемся завершения всех задач
-            var results = await Task.WhenAll(taskLoadSu, taskLoadSum, taskLoadSum2);
+            var results = await Task.WhenAll(taskLoadSu, taskLoadSum, taskLoadSum2,resultLoadSm, resultLoadSu, resultLoadMonth, resultLoadBreak);
 
             // Добавляем полученные данные в коллекции
             if (results[0] != null) _dataSetInformationReportsSu.Add(results[0]);
             if (results[1] != null) _dataSetInformationSum.Add(results[1]);
             if (results[2] != null) _dataSetInformationSum2.Add(results[2]);
+            if (results[3] != null) _datasetInformationReportsSm.Add(results[3]);
+            if (results[4] != null) _dataSetInformationReportsSu.Add(results[4]);
+            if (results[5] != null) _datasetInformationReportsMonth.Add(results[5]);
+            if (results[6] != null) _datasetInformationReportsBreak.Add(results[6]);
 
             // Обновляем UI в главном потоке
             this.Invoke((Action)(() =>
@@ -295,7 +306,7 @@ namespace report
             catch (MySqlException ex)
             {
                 Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
             }
             catch (Exception ex)
             {
@@ -306,7 +317,7 @@ namespace report
                 if (mCon != null) 
                 {
                     // Возвращаем подключение в пул после использования
-                    pool.ReturnConnection(mCon);
+                    await pool.ReturnConnection(mCon);
                 } 
             }
 
@@ -405,7 +416,7 @@ namespace report
             catch (MySqlException ex)
             {
                 Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
             }
             catch (Exception ex)
             {
@@ -416,7 +427,7 @@ namespace report
                 if (mCon != null) 
                 {
                     // Возвращаем подключение в пул после использования
-                    pool.ReturnConnection(mCon);
+                    await pool.ReturnConnection(mCon);
                 } 
             }
 
@@ -517,7 +528,7 @@ namespace report
             catch (MySqlException ex)
             {
                 Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
             }
             catch (Exception ex)
             {
@@ -528,7 +539,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    pool.ReturnConnection(mCon);
+                    await pool.ReturnConnection(mCon);
                 }
             }
 
@@ -633,7 +644,7 @@ namespace report
             catch (MySqlException ex)
             {
                 Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
             }
             catch (Exception ex)
             {
@@ -644,7 +655,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    pool.ReturnConnection(mCon);
+                    await pool.ReturnConnection(mCon);
                 }
             }
 
@@ -700,7 +711,6 @@ namespace report
                     mCon = await pool.GetConnectionAsync();
                 }
 
-                // string sql = ("SELECT * FROM spslogger.configtable;");
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
@@ -739,7 +749,7 @@ namespace report
             catch (MySqlException ex)
             {
                 Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
             }
             catch (Exception ex)
             {
@@ -750,7 +760,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    pool.ReturnConnection(mCon);
+                    await pool.ReturnConnection(mCon);
                 }
             }
 
@@ -812,12 +822,17 @@ namespace report
 ") as brak";
             string sql3 = "(select ifnull(sum(sum_er),0) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and ms.data_err >= '" + start + " 08:00:00' and ms.data_err < concat(date_add('" + finish + "', interval 1 day), ' 08:00:00')" +
 ") ";
-            string sql = "SELECT data_52, (count(dbid)-"+sql3+ ") as count_1, round((count(dbid-" + sql3 + ")* '4.32'), 2) as mas," +
+            string sql = "SELECT data_52," +
+                " (count(dbid)-"+sql3+ ") as count_1, round((count(dbid-" + sql3 + ")* '4.32'), 2) as mas," +
                  "concat(cast(sum(data_23) + sum(data_25) as char(10)),  ' / ', (round((((sum(data_23) + sum(data_25)) / (count(dbid-" + sql3 + ") * '4.32'))), 1))) as Lime_sum," +
-                 "concat(cast(sum(data_27) + sum(data_29) as char(10)), ' / ', (round((((sum(data_27) + sum(data_29)) / (count(dbid-" + sql3 + ") * '4.32'))), 1))) as Cement_sum,  concat(cast(round(sum(data_116), 1) as char(10)), ' / ', (round((sum(data_116) / count(dbid-" + sql3 + ") / '4.32'), 1))) as Gips," +
+                 "concat(cast(sum(data_27) + sum(data_29) as char(10)), ' / ', (round((((sum(data_27) + sum(data_29)) / (count(dbid-" + sql3 + ") * '4.32'))), 1))) as Cement_sum," +
+                 "  concat(cast(round(sum(data_116), 1) as char(10)), ' / ', (round((sum(data_116) / count(dbid-" + sql3 + ") / '4.32'), 1))) as Gips," +
                  "concat(cast(round(sum(data_181), 1) as char(10)), ' / ', (round((sum(data_181) / count(dbid-" + sql3 + ") / '4.32'), 1))) as Sand, " +
-                 "concat(cast(round(sum(data_162), 3) as char(10)), ' / ', (round((sum(data_162) / count(dbid-" + sql3 + ") / '4.32'), 1))) as Additive, concat(cast(round((sum(data_193) + sum(data_199)), 2) as char(10)), ' / ', (round(((sum(data_193) + sum(data_199)) / count(dbid-" + sql3 + ") / '4.32'), 2))) as alum," +
-                 "concat(cast(round((count(dbid) * '4.32' * '" + sh + "'), 2) as char(10)), ' / ', '" + sh + "') as drob, " + sql2 + " from spslogger.mixreport as mr where  Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')   group by data_52";
+                 "concat(cast(round(sum(data_162), 3) as char(10)), ' / ', (round((sum(data_162) / count(dbid-" + sql3 + ") / '4.32'), 1))) as Additive," +
+                 " concat(cast(round((sum(data_193) + sum(data_199)), 2) as char(10)), ' / ', (round(((sum(data_193) + sum(data_199)) / count(dbid-" + sql3 + ") / '4.32'), 2))) as alum," +
+                 "concat(cast(round((count(dbid) * '4.32' * '" + sh + "'), 2) as char(10))," +
+                 " ' / ', '" + sh + "') as drob," +
+                 " " + sql2 + " from spslogger.mixreport as mr where  Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')   group by data_52";
 #endif
             DataSetInformation dsInformation = null;
             MySqlConnection mCon = new MySqlConnection();
@@ -873,7 +888,7 @@ namespace report
             catch (MySqlException ex)
             {
                 Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
             }
             catch (Exception ex)
             {
@@ -884,7 +899,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    pool.ReturnConnection(mCon);
+                     await pool.ReturnConnection(mCon);
                 }
             }
 
@@ -992,7 +1007,7 @@ namespace report
             catch (MySqlException ex)
             {
                 Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже" + ex.Message)));
+                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
             }
             catch (Exception ex)
             {
@@ -1003,7 +1018,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    pool.ReturnConnection(mCon);
+                    await pool.ReturnConnection(mCon);
                 }
             }
 
@@ -1097,6 +1112,10 @@ namespace report
 
         private async void Form1_Load(object sender, EventArgs e)
         {
+            // Замер времени начала выполнения
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             picker();
 
             bool isComlite;
@@ -1124,11 +1143,20 @@ namespace report
 
             // Выполняем FirstUpdate асинхронно в фоновом потоке
             await Task.Run(() => FirstUpdate(tableName)); // Выполнение в фоновом потоке
+            stopwatch.Stop();
+            Console.WriteLine($"Этап 1 - Время выполнения: {stopwatch.Elapsed.TotalMilliseconds} миллисекунд\n" +
+                $"Время в секундах - {stopwatch.Elapsed.Seconds}");
+            stopwatch.Reset(); // Сброс секундомера перед следующим этапом
 
-            // Устанавливаем курсор в "ожидание"
+            stopwatch.Start();
 
             await Task.Run(() => LoadFullDateYear());
             SetControlsEnabled(true);
+
+            // Замер времени окончания
+            stopwatch.Stop();
+            Console.WriteLine($"Этап 2 - Время выполнения: {stopwatch.Elapsed.TotalMilliseconds} миллисекунд\n" +
+    $"Время в секундах - {stopwatch.Elapsed.Seconds}");
 
         }
 
@@ -1388,6 +1416,11 @@ namespace report
             _dataSetInformationSum.RemoveAll(item => item.TableName == tableName && item.Sh == sh);
             _dataSetInformationSum2.RemoveAll(item => item.TableName == tableName && item.Sh == sh);
 
+            _datasetInformationReportsSm.RemoveAll(item => item.TableName == tableName && item.Sh == sh);
+            _dataSetInformationReportsSu.RemoveAll(item => item.TableName == tableName && item.Sh == sh);
+            _datasetInformationReportsMonth.RemoveAll(item => item.TableName == tableName && item.Sh == sh);
+            _datasetInformationReportsBreak.RemoveAll(item => item.TableName == tableName && item.Sh == sh);
+
             RemoveDataTablesFromDataSet(tableName);
 
             await FirstUpdate(tableName);
@@ -1404,6 +1437,15 @@ namespace report
 
             // Удаляем таблицы из _sum2
             RemoveDataTable(_sum2, tableName);
+
+            RemoveDataTable(_reportsSm, tableName);
+            
+            RemoveDataTable(_reportsSu, tableName);
+
+            RemoveDataTable(_reportsMounth, tableName);
+
+            RemoveDataTable(_reportBreak, tableName);
+
         }
 
         private void RemoveDataTable(DataSet dataSet, string tableName)
