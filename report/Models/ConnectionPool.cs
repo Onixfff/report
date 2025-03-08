@@ -97,6 +97,9 @@ namespace report.Models
                         case ConnectionState.Broken:
                             connection.Dispose();
                             break;
+                        default:
+                            connection.Dispose();
+                            break;
                     }
                 }
 
