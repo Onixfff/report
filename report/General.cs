@@ -111,7 +111,7 @@ namespace report
 
             //Загрузка данных
             // Запускаем все задачи параллельно
-            var taskLoadSu = LoadReportAsync(_reports, start, finish, sh, tableName);
+            var taskLoadSu = LoadBaseReport(_reports, start, finish, sh, tableName, GetStringReport(start, finish, sh));
             var taskLoadSum = LoadSumAsync(_sum, start, finish, sh, tableName);
             var taskLoadSum2 = LoadSum2Async(_sum2, start, finish, sh, tableName);
 
@@ -198,7 +198,7 @@ namespace report
                 var resultLoadMonth = LoadReportMonthAsync(_reportsMounth, start, finish, sh, tableName);
                 var resultLoadBreak = LoadBreakAsync(_reportBreak, start, finish, sh, tableName);
                 
-                var resultLoadReport = LoadReportAsync(_reports, start, finish, sh, tableName);
+                var resultLoadReport = LoadBaseReport(_reports, start, finish, sh, tableName, GetStringReport(start, finish, sh));
                 var resultLoadSum = LoadSumAsync(_sum, start, finish, sh, tableName);
                 var resultLoadSum2 = LoadSum2Async(_sum2, start, finish, sh, tableName);
 
@@ -220,40 +220,9 @@ namespace report
         }
 
         #region datagridview1
-        private async Task<DataSetInformation> LoadReportAsync(DataSet ds, string start, string finish, string sh, string tableName)
+
+        private async Task<DataSetInformation> LoadBaseReport(DataSet ds, string start, string finish, string sh, string tableName, string sql)
         {
-#if OLD
-            string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
- "date_format(Timestamp, \"%d %M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(ms.data_err, \"%d %M %Y\")))" +
-"and(if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь'))= (if (time(ms.data_err) <= '20:00:00' and time(ms.data_err)>= '08:00:00','день','ночь'))) as brak";
-            string sql = "SELECT if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(Timestamp, \"%d %M %Y\")) as df," +
-                "if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь') as shift, data_52," +
-                "min(dbid) as min, max(dbid) as max, count(dbid) as count_1, round((count(dbid) * '4.32'), 2) as mas, sum(data_23) as Lime_1," +
-"sum(data_25) as Lime_2,  (sum(data_23) + sum(data_25)) as Lime_sum," +
-"sum(data_27) as Cement_1, sum(data_29) as Cement_2," +
-"(sum(data_27) + sum(data_29)) as Cement_sum," +
-"sum(data_116) as Gips, round(sum(data_181), 1) as Sand, round(sum(data_162), 1) as Additive," +
-"round((sum(data_193) + sum(data_199)), 2) as alum, round((count(dbid) * '4.32' * '" + sh + "'), 2) as drob, "+sql2+" " +
-""+
-  "from spslogger.mixreport as mr where Timestamp >= '"+start+ " 08:00:00' and Timestamp < concat( date_add('"+finish+"', interval 1 day), ' 08:00:00')  group by df,shift, data_52";
-#else
-            string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
-             "date_format(Timestamp, \"%d %M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(ms.data_err, \"%d %M %Y\")))" +
-            "and(if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь'))= (if (time(ms.data_err) <= '20:00:00' and time(ms.data_err)>= '08:00:00','день','ночь'))) as brak";
-            string sql3 = "(select ifnull(sum(sum_er),0) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
-"date_format(Timestamp, \"%d %M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(ms.data_err, \"%d %M %Y\")))" +
-"and(if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь'))= (if (time(ms.data_err) <= '20:00:00' and time(ms.data_err)>= '08:00:00','день','ночь')))";
-            string sql = "SELECT if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(Timestamp, \"%d %M %Y\")) as df," +
-                "if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь') as shift, data_52," +
-                "min(dbid) as min, max(dbid) as max, count(dbid)-" + sql3 + " as count_1, round(((count(dbid)-" + sql3 + ") * '4.32'), 2) as mas, sum(data_23) as Lime_1," +
-"sum(data_25) as Lime_2,  (sum(data_23) + sum(data_25)) as Lime_sum," +
-"sum(data_27) as Cement_1, sum(data_29) as Cement_2," +
-"(sum(data_27) + sum(data_29)) as Cement_sum," +
-"sum(data_116) as Gips, round(sum(data_181), 1) as Sand, round(sum(data_162), 1) as Additive," +
-"round((sum(data_193) + sum(data_199)), 2) as alum, round((count(dbid) * '4.32' * '" + sh + "'), 2) as drob, " + sql2 + " " +
-"" +
-  "from spslogger.mixreport as mr where Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')  group by df,shift, data_52";
-#endif
             DataSetInformation dsInformation = null;
             MySqlConnection mCon = new MySqlConnection();
 
@@ -312,16 +281,53 @@ namespace report
             {
                 this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
             }
-            finally 
-            { 
-                if (mCon != null) 
+            finally
+            {
+                if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
                     await pool.ReturnConnection(mCon);
-                } 
+                }
             }
 
             return dsInformation;
+        }
+
+        private string GetStringReport(string start, string finish, string sh)
+        {
+#if OLD
+            string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
+ "date_format(Timestamp, \"%d %M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(ms.data_err, \"%d %M %Y\")))" +
+"and(if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь'))= (if (time(ms.data_err) <= '20:00:00' and time(ms.data_err)>= '08:00:00','день','ночь'))) as brak";
+            string sql = "SELECT if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(Timestamp, \"%d %M %Y\")) as df," +
+                "if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь') as shift, data_52," +
+                "min(dbid) as min, max(dbid) as max, count(dbid) as count_1, round((count(dbid) * '4.32'), 2) as mas, sum(data_23) as Lime_1," +
+"sum(data_25) as Lime_2,  (sum(data_23) + sum(data_25)) as Lime_sum," +
+"sum(data_27) as Cement_1, sum(data_29) as Cement_2," +
+"(sum(data_27) + sum(data_29)) as Cement_sum," +
+"sum(data_116) as Gips, round(sum(data_181), 1) as Sand, round(sum(data_162), 1) as Additive," +
+"round((sum(data_193) + sum(data_199)), 2) as alum, round((count(dbid) * '4.32' * '" + sh + "'), 2) as drob, "+sql2+" " +
+""+
+  "from spslogger.mixreport as mr where Timestamp >= '"+start+ " 08:00:00' and Timestamp < concat( date_add('"+finish+"', interval 1 day), ' 08:00:00')  group by df,shift, data_52";
+#else
+            string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
+             "date_format(Timestamp, \"%d %M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(ms.data_err, \"%d %M %Y\")))" +
+            "and(if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь'))= (if (time(ms.data_err) <= '20:00:00' and time(ms.data_err)>= '08:00:00','день','ночь'))) as brak";
+            string sql3 = "(select ifnull(sum(sum_er),0) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
+"date_format(Timestamp, \"%d %M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(ms.data_err, \"%d %M %Y\")))" +
+"and(if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь'))= (if (time(ms.data_err) <= '20:00:00' and time(ms.data_err)>= '08:00:00','день','ночь')))";
+            string sql = "SELECT if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(Timestamp, \"%d %M %Y\")) as df," +
+                "if (time(Timestamp) <= '20:00:00' and time(Timestamp)>= '08:00:00','день','ночь') as shift, data_52," +
+                "min(dbid) as min, max(dbid) as max, count(dbid)-" + sql3 + " as count_1, round(((count(dbid)-" + sql3 + ") * '4.32'), 2) as mas, sum(data_23) as Lime_1," +
+"sum(data_25) as Lime_2,  (sum(data_23) + sum(data_25)) as Lime_sum," +
+"sum(data_27) as Cement_1, sum(data_29) as Cement_2," +
+"(sum(data_27) + sum(data_29)) as Cement_sum," +
+"sum(data_116) as Gips, round(sum(data_181), 1) as Sand, round(sum(data_162), 1) as Additive," +
+"round((sum(data_193) + sum(data_199)), 2) as alum, round((count(dbid) * '4.32' * '" + sh + "'), 2) as drob, " + sql2 + " " +
+"" +
+  "from spslogger.mixreport as mr where Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')  group by df,shift, data_52";
+#endif
+            return sql;
         }
 
         private void UpdateUiReport(DataTable ds)
