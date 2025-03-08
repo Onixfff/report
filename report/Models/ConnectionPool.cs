@@ -38,13 +38,73 @@ namespace report.Models
 
             while (true)
             {
-            // Если есть доступное подключение в пуле, забираем его
-            if (_connectionPool.TryTake(out connection))
-            {
-                    switch (connection.State)
+                // Если есть доступное подключение в пуле, забираем его
+                if (_connectionPool.TryTake(out connection))
                 {
+                    switch (connection.State)
+                    {
                         case ConnectionState.Closed:
 
+                            try
+                            {
+                                await connection.OpenAsync();
+                            }
+                            catch (MySqlException ex)
+                            {
+                                // Если ошибка связана с 'lower_case_table_names', игнорируем её и не предпринимаем попыток повторного подключения
+                                if (ex.Message.Contains(messageError))
+                                {
+                                    // Просто логируем или игнорируем ошибку
+                                    Console.WriteLine("Warning: Ignored MySQL error: " + ex.Message);
+                                }
+                                else
+                                {
+                                    // Для других ошибок выводим сообщение
+                                    MessageBox.Show(ex.Message);
+                                }
+                            }
+
+                            break;
+                        case ConnectionState.Open:
+                            return connection;
+                        case ConnectionState.Connecting:
+                            // Если подключение зависло, ждем его завершения, но не бесконечно
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                            {
+                                connection.Dispose();
+                                break; // Выходим и создаем новое
+                            }
+                            await Task.Delay(delay);
+                            continue;
+                        case ConnectionState.Executing:
+                            // Если подключение зависло, ждем его завершения, но не бесконечно
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                            {
+                                connection.Dispose();
+                                break; // Выходим и создаем новое
+                            }
+                            await Task.Delay(delay);
+                            continue;
+                        case ConnectionState.Fetching:
+                            // Если подключение зависло, ждем его завершения, но не бесконечно
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                            {
+                                connection.Dispose();
+                                break; // Выходим и создаем новое
+                            }
+                            await Task.Delay(delay);
+                            continue;
+                        case ConnectionState.Broken:
+                            connection.Dispose();
+                            break;
+                    }
+                }
+
+                // Если пул пуст и мы можем создать новое подключение, то создаем его
+                if (_connectionPool.Count < _maxConnections)
+                {
+                    connection = new MySqlConnection(_connectionString);
+                    
                     try
                     {
                         await connection.OpenAsync();
@@ -64,77 +124,17 @@ namespace report.Models
                         }
                     }
 
-                            break;
-                        case ConnectionState.Open:
-                            return connection;
-                        case ConnectionState.Connecting:
-                            // Если подключение зависло, ждем его завершения, но не бесконечно
-                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-                            {
-                                connection.Dispose();
-                                break; // Выходим и создаем новое
+                    return connection;
                 }
-                            await Task.Delay(delay);
-                            continue;
-                        case ConnectionState.Executing:
-                            // Если подключение зависло, ждем его завершения, но не бесконечно
-                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-                {
-                                connection.Dispose();
-                                break; // Выходим и создаем новое
-                }
-                            await Task.Delay(delay);
-                            continue;
-                        case ConnectionState.Fetching:
-                            // Если подключение зависло, ждем его завершения, но не бесконечно
-                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-                {
-                    connection.Dispose();
-                                break; // Выходим и создаем новое
-                }
-                            await Task.Delay(delay);
-                            continue;
-                        case ConnectionState.Broken:
-                            connection.Dispose();
-                            break;
-            }
-                }
-
-            // Если пул пуст и мы можем создать новое подключение, то создаем его
-            if (_connectionPool.Count < _maxConnections)
-            {
-                connection = new MySqlConnection(_connectionString);
-
-                try
-                {
-                    await connection.OpenAsync();
-                }
-                catch (MySqlException ex)
-                {
-                    // Если ошибка связана с 'lower_case_table_names', игнорируем её и не предпринимаем попыток повторного подключения
-                    if (ex.Message.Contains(messageError))
-                    {
-                        // Просто логируем или игнорируем ошибку
-                        Console.WriteLine("Warning: Ignored MySQL error: " + ex.Message);
-                    }
-                    else
-                    {
-                        // Для других ошибок выводим сообщение
-                        MessageBox.Show(ex.Message);
-                    }
-                }
-
-                return connection;
-            }
 
                 // Если пул переполнен, ждем, но не бесконечно
                 if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-            {
+                {
                     throw new TimeoutException("Превышено время ожидания доступного подключения.");
-            }
+                }
 
                 await Task.Delay(delay);
-        }
+            }
         }
 
         // Возвращаем подключение в пул
@@ -180,7 +180,7 @@ namespace report.Models
                         case ConnectionState.Fetching:
                             // Если подключение зависло, ждем его завершения
                             if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-        {
+                            {
                                 connection.Dispose();
                                 throw new TimeoutException("Превышено время ожидания завершения операции.");
                             }
@@ -197,7 +197,7 @@ namespace report.Models
 
                     // Проверка на превышение времени ожидания
                     if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-            {
+                    {
                         throw new TimeoutException("Превышено время ожидания возврата подключения.");
                     }
 
