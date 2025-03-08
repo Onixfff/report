@@ -155,11 +155,9 @@ namespace report.Models
                     switch (connection.State)
                     {
                         case ConnectionState.Closed:
-                            Console.WriteLine("Закрыл соединение при возврате");
                             connection.Dispose();
                             return; // Закрываем и выходим, так как соединение закрыто
                         case ConnectionState.Open:
-                            Console.WriteLine("Вернул соединение при возврате");
                             _connectionPool.Add(connection);
                             return; // Соединение открыто, добавляем в пул и выходим
                         case ConnectionState.Connecting:
