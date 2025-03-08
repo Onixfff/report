@@ -136,6 +136,7 @@ namespace report.Models
                     throw new TimeoutException("Превышено время ожидания доступного подключения.");
                 }
 
+                CleanUp();
                 await Task.Delay(delay);
             }
         }
@@ -201,7 +202,6 @@ namespace report.Models
                     {
                         throw new TimeoutException("Превышено время ожидания возврата подключения.");
                     }
-
                     await Task.Delay(delay); // Интервал перед следующей проверкой
                 }
                 catch (TimeoutException ex)
