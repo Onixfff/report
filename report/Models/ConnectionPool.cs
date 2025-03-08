@@ -158,40 +158,40 @@ namespace report.Models
                         case ConnectionState.Closed:
                             connection.Dispose();
                             return; // Закрываем и выходим, так как соединение закрыто
-                        case ConnectionState.Open:
-                            _connectionPool.Add(connection);
-                            return; // Соединение открыто, добавляем в пул и выходим
-                        case ConnectionState.Connecting:
-                            // Если подключение зависло, ждем его завершения
-                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-                            {
-                                connection.Dispose();
-                                throw new TimeoutException("Превышено время ожидания завершения операции.");
-                            }
-                            await Task.Delay(delay);
-                            break; // Ждем, затем повторяем проверку
-                        case ConnectionState.Executing:
-                            // Если подключение зависло, ждем его завершения
-                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-                            {
-                                connection.Dispose();
-                                throw new TimeoutException("Превышено время ожидания завершения операции.");
-                            }
-                            await Task.Delay(delay);
-                            break; // Ждем, затем повторяем проверку
-                        case ConnectionState.Fetching:
-                            // Если подключение зависло, ждем его завершения
-                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
-                            {
-                                connection.Dispose();
-                                throw new TimeoutException("Превышено время ожидания завершения операции.");
-                            }
-                            await Task.Delay(delay);
-                            break; // Ждем, затем повторяем проверку
-                        case ConnectionState.Broken:
-                            Console.WriteLine("Закрыл BROKEN соединение при возврате");
-                            connection.Dispose();
-                            return; // Если соединение сломано, освобождаем ресурсы
+                        //case ConnectionState.Open:
+                        //    _connectionPool.Add(connection);
+                        //    return; // Соединение открыто, добавляем в пул и выходим
+                        //case ConnectionState.Connecting:
+                        //    // Если подключение зависло, ждем его завершения
+                        //    if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                        //    {
+                        //        connection.Dispose();
+                        //        throw new TimeoutException("Превышено время ожидания завершения операции.");
+                        //    }
+                        //    await Task.Delay(delay);
+                        //    break; // Ждем, затем повторяем проверку
+                        //case ConnectionState.Executing:
+                        //    // Если подключение зависло, ждем его завершения
+                        //    if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                        //    {
+                        //        connection.Dispose();
+                        //        throw new TimeoutException("Превышено время ожидания завершения операции.");
+                        //    }
+                        //    await Task.Delay(delay);
+                        //    break; // Ждем, затем повторяем проверку
+                        //case ConnectionState.Fetching:
+                        //    // Если подключение зависло, ждем его завершения
+                        //    if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                        //    {
+                        //        connection.Dispose();
+                        //        throw new TimeoutException("Превышено время ожидания завершения операции.");
+                        //    }
+                        //    await Task.Delay(delay);
+                        //    break; // Ждем, затем повторяем проверку
+                        //case ConnectionState.Broken:
+                        //    Console.WriteLine("Закрыл BROKEN соединение при возврате");
+                        //    connection.Dispose();
+                        //    return; // Если соединение сломано, освобождаем ресурсы
                         default:
                             connection.Dispose();
                             break;
