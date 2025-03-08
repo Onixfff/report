@@ -13,7 +13,7 @@ namespace report.Models
         private readonly ConcurrentBag<MySqlConnection> _connectionPool;
         private readonly int _maxConnections;
 
-        public ConnectionPool(string connectionString, int initialSize = 3, int maxConnections = 4)
+        public ConnectionPool(string connectionString, int initialSize = 4, int maxConnections = 6)
         {
             _connectionString = connectionString;
             _connectionPool = new ConcurrentBag<MySqlConnection>();
@@ -31,12 +31,20 @@ namespace report.Models
         {
             MySqlConnection connection;
             string messageError = "Unknown system variable 'lower_case_table_names'";
+            int waitTime = 5000; // Максимальное ожидание 5 секунд
+            int delay = 100; // Интервал ожидания
 
+            DateTime startTime = DateTime.UtcNow;
+
+            while (true)
+            {
             // Если есть доступное подключение в пуле, забираем его
             if (_connectionPool.TryTake(out connection))
             {
-                if (connection.State == ConnectionState.Closed)
+                    switch (connection.State)
                 {
+                        case ConnectionState.Closed:
+
                     try
                     {
                         await connection.OpenAsync();
@@ -55,16 +63,42 @@ namespace report.Models
                             MessageBox.Show(ex.Message);
                         }
                     }
+
+                            break;
+                        case ConnectionState.Open:
+                            return connection;
+                        case ConnectionState.Connecting:
+                            // Если подключение зависло, ждем его завершения, но не бесконечно
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                            {
+                                connection.Dispose();
+                                break; // Выходим и создаем новое
                 }
-                else if(connection.State == ConnectionState.Open)
+                            await Task.Delay(delay);
+                            continue;
+                        case ConnectionState.Executing:
+                            // Если подключение зависло, ждем его завершения, но не бесконечно
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
                 {
-                    return connection;
+                                connection.Dispose();
+                                break; // Выходим и создаем новое
                 }
-                else
+                            await Task.Delay(delay);
+                            continue;
+                        case ConnectionState.Fetching:
+                            // Если подключение зависло, ждем его завершения, но не бесконечно
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
                 {
                     connection.Dispose();
+                                break; // Выходим и создаем новое
                 }
+                            await Task.Delay(delay);
+                            continue;
+                        case ConnectionState.Broken:
+                            connection.Dispose();
+                            break;
             }
+                }
 
             // Если пул пуст и мы можем создать новое подключение, то создаем его
             if (_connectionPool.Count < _maxConnections)
@@ -93,25 +127,91 @@ namespace report.Models
                 return connection;
             }
 
-            // Если достигнут лимит подключений, то ждем доступного подключения
-            while (_connectionPool.Count == 0)
+                // Если пул переполнен, ждем, но не бесконечно
+                if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
             {
-                await Task.Delay(100);  // Ожидаем 100 миллисекунд, прежде чем снова попытаться получить подключение
+                    throw new TimeoutException("Превышено время ожидания доступного подключения.");
             }
 
-            // После ожидания снова пытаемся получить подключение
-            return await GetConnectionAsync();
+                await Task.Delay(delay);
+        }
         }
 
         // Возвращаем подключение в пул
-        public async void ReturnConnection(MySqlConnection connection)
+        public async Task ReturnConnection(MySqlConnection connection)
         {
-            if (connection != null && connection.State == ConnectionState.Open)
-            {
-                await connection.CloseAsync();
+            int waitTime = 5000; // Максимальное ожидание 5 секунд
+            int delay = 100; // Интервал ожидания
 
-                _connectionPool.Add(connection);
+            DateTime startTime = DateTime.UtcNow;
+
+            while (true)
+            {
+                try 
+                {
+                    switch (connection.State)
+                    {
+                        case ConnectionState.Closed:
+                            Console.WriteLine("Закрыл соединение при возврате");
+                            connection.Dispose();
+                            return; // Закрываем и выходим, так как соединение закрыто
+                        case ConnectionState.Open:
+                            Console.WriteLine("Вернул соединение при возврате");
+                            _connectionPool.Add(connection);
+                            return; // Соединение открыто, добавляем в пул и выходим
+                        case ConnectionState.Connecting:
+                            // Если подключение зависло, ждем его завершения
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                            {
+                                connection.Dispose();
+                                throw new TimeoutException("Превышено время ожидания завершения операции.");
+                            }
+                            await Task.Delay(delay);
+                            break; // Ждем, затем повторяем проверку
+                        case ConnectionState.Executing:
+                            // Если подключение зависло, ждем его завершения
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+                            {
+                                connection.Dispose();
+                                throw new TimeoutException("Превышено время ожидания завершения операции.");
+                            }
+                            await Task.Delay(delay);
+                            break; // Ждем, затем повторяем проверку
+                        case ConnectionState.Fetching:
+                            // Если подключение зависло, ждем его завершения
+                            if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+        {
+                                connection.Dispose();
+                                throw new TimeoutException("Превышено время ожидания завершения операции.");
+                            }
+                            await Task.Delay(delay);
+                            break; // Ждем, затем повторяем проверку
+                        case ConnectionState.Broken:
+                            Console.WriteLine("Закрыл BROKEN соединение при возврате");
+                            connection.Dispose();
+                            return; // Если соединение сломано, освобождаем ресурсы
+                        default:
+                            connection.Dispose();
+                            break;
+                    }
+
+                    // Проверка на превышение времени ожидания
+                    if ((DateTime.UtcNow - startTime).TotalMilliseconds > waitTime)
+            {
+                        throw new TimeoutException("Превышено время ожидания возврата подключения.");
+                    }
+
+                    await Task.Delay(delay); // Интервал перед следующей проверкой
+                }
+                catch (TimeoutException ex)
+                {
+                    // Логирование ошибок
+                    Console.WriteLine("Ошибка при возврате соединения: " + ex.Message);
+                    connection.Dispose();
+                    throw; // Пробрасываем ошибку дальше
+                }
             }
+
         }
 
         // Очистка старых или неактивных подключений (можно вызывать периодически)
