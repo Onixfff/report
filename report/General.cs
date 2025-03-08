@@ -292,6 +292,11 @@ namespace report
             return dsInformation;
         }
 
+        private void ClearDataGridView(DataGridView dataGridView)
+        {
+            dataGridView.DataSource = null;
+        }
+
         #region datagridview1
 
         private string GetSqlReport(string start, string finish, string sh)
@@ -844,7 +849,6 @@ namespace report
 
                 string click = ((Button)sender).Text;
 
-
                 if (System.Enum.TryParse(click, true, out EnumMount mount))
                 {
                     picker((int)mount + 1);
@@ -855,29 +859,55 @@ namespace report
 
                     string tableName = $"{sh}: {start} - {finish}";
 
+                    bool isCopmlite = false;
+
                     foreach (var item in _datasetInformationReport)
                     {
                         if (item.TableName == tableName && item.Sh == sh)
                         {
+                            isCopmlite = true;
                             UpdateUiReport(item.DataTable);
                         }
                     }
+
+                    if (isCopmlite == false) 
+                    {
+                        ClearDataGridView(dataGridView1);
+                    }
+
+                    isComlite = false;
 
                     foreach (var item in _dataSetInformationSum)
                     {
                         if (item.TableName == tableName && item.Sh == sh)
                         {
+                            isComlite = true;
                             UpdateUiSum(item.DataTable);
                         }
                     }
+
+                    if (isCopmlite == false)
+                    {
+                        ClearDataGridView(dataGridView2);
+                    }
+
+                    isComlite = false;
 
                     foreach (var item in _dataSetInformationSum2)
                     {
                         if (item.TableName == tableName && item.Sh == sh)
                         {
+                            isComlite = true;
                             UpdateUiSum2(item.DataTable);
                         }
                     }
+
+                    if (isCopmlite == false)
+                    {
+                        ClearDataGridView(dataGridView3);
+                    }
+
+                    isComlite = false;
                 } 
             }
             catch(Exception ex)
