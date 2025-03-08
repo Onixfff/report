@@ -111,14 +111,14 @@ namespace report
 
             //Загрузка данных
             // Запускаем все задачи параллельно
-            var taskLoadReport = LoadBaseReport(_reports, start, finish, sh, tableName, GetStringReport(start, finish, sh));
-            var taskLoadSum = LoadSumAsync(_sum, start, finish, sh, tableName);
-            var taskLoadSum2 = LoadSum2Async(_sum2, start, finish, sh, tableName);
+            var taskLoadReport = LoadBaseReport(_reports, start, finish, sh, tableName, GetSqlReport(start, finish, sh));
+            var taskLoadSum = LoadBaseReport(_sum, start, finish, sh, tableName, GetSqlSum(start, finish, sh));
+            var taskLoadSum2 = LoadBaseReport(_sum2, start, finish, sh, tableName, GetSqlSum2(start, finish, sh));
 
-            var resultLoadSm = LoadReportSmAsync(_reportsSm, start, finish, sh, tableName);
-            var resultLoadSu = LoadReportSuAsync(_reportsSu, start, finish, sh, tableName);
-            var resultLoadMonth = LoadReportMonthAsync(_reportsMounth, start, finish, sh, tableName);
-            var resultLoadBreak = LoadBreakAsync(_reportBreak, start, finish, sh, tableName);
+            var resultLoadSm = LoadBaseReport(_reportsSm, start, finish, sh, tableName, GetSqlSm(start, finish, sh));
+            var resultLoadSu = LoadBaseReport(_reportsSu, start, finish, sh, tableName, GetSqlSu(start, finish, sh));
+            var resultLoadMonth = LoadBaseReport(_reportsMounth, start, finish, sh, tableName, GetSqlMonth(start, finish, sh));
+            var resultLoadBreak = LoadBaseReport(_reportBreak, start, finish, sh, tableName, GetSqlBreak(start, finish, sh));
 
             // Пока БД работает, UI остается отзывчивым
 
@@ -193,33 +193,30 @@ namespace report
 
                 //Загрузка данных
                 // Запускаем все задачи параллельно
-                var resultLoadSm = LoadReportSmAsync(_reportsSm, start, finish, sh, tableName);
-                var resultLoadSu = LoadReportSuAsync(_reportsSu, start, finish, sh, tableName);
-                var resultLoadMonth = LoadReportMonthAsync(_reportsMounth, start, finish, sh, tableName);
-                var resultLoadBreak = LoadBreakAsync(_reportBreak, start, finish, sh, tableName);
-                
-                var resultLoadReport = LoadBaseReport(_reports, start, finish, sh, tableName, GetStringReport(start, finish, sh));
-                var resultLoadSum = LoadSumAsync(_sum, start, finish, sh, tableName);
-                var resultLoadSum2 = LoadSum2Async(_sum2, start, finish, sh, tableName);
+                var taskLoadReport = LoadBaseReport(_reports, start, finish, sh, tableName, GetSqlReport(start, finish, sh));
+                var taskLoadSum = LoadBaseReport(_sum, start, finish, sh, tableName, GetSqlSum(start, finish, sh));
+                var taskLoadSum2 = LoadBaseReport(_sum2, start, finish, sh, tableName, GetSqlSum2(start, finish, sh));
 
+                var resultLoadSm = LoadBaseReport(_reportsSm, start, finish, sh, tableName, GetSqlSm(start, finish, sh));
+                var resultLoadSu = LoadBaseReport(_reportsSu, start, finish, sh, tableName, GetSqlSu(start, finish, sh));
+                var resultLoadMonth = LoadBaseReport(_reportsMounth, start, finish, sh, tableName, GetSqlMonth(start, finish, sh));
+                var resultLoadBreak = LoadBaseReport(_reportBreak, start, finish, sh, tableName, GetSqlBreak(start, finish, sh));
 
                 // Пока БД работает, UI остается отзывчивым
 
                 // Дожидаемся завершения всех задач
-                var results = await Task.WhenAll(resultLoadSm, resultLoadSu, resultLoadMonth, resultLoadReport, resultLoadSum, resultLoadSum2, resultLoadBreak);
+                var results = await Task.WhenAll(taskLoadReport, taskLoadSum, taskLoadSum2, resultLoadSm, resultLoadSu, resultLoadMonth, resultLoadBreak);
 
                 // Добавляем полученные данные в коллекции
-                if (results[0] != null) _datasetInformationReportsSm.Add(results[0]);
-                if (results[1] != null) _dataSetInformationReportsSu.Add(results[1]);
-                if (results[2] != null) _datasetInformationReportsMonth.Add(results[2]);
-                if (results[3] != null) _datasetInformationReport.Add(results[3]);
-                if (results[4] != null) _dataSetInformationSum.Add(results[4]);
-                if (results[5] != null) _dataSetInformationSum2.Add(results[5]);
+                if (results[0] != null) _datasetInformationReport.Add(results[0]);
+                if (results[1] != null) _dataSetInformationSum.Add(results[1]);
+                if (results[2] != null) _dataSetInformationSum2.Add(results[2]);
+                if (results[3] != null) _datasetInformationReportsSm.Add(results[3]);
+                if (results[4] != null) _dataSetInformationReportsSu.Add(results[4]);
+                if (results[5] != null) _datasetInformationReportsMonth.Add(results[5]);
                 if (results[6] != null) _datasetInformationReportsBreak.Add(results[6]);
             }
         }
-
-        #region datagridview1
 
         private async Task<DataSetInformation> LoadBaseReport(DataSet ds, string start, string finish, string sh, string tableName, string sql)
         {
@@ -295,7 +292,9 @@ namespace report
             return dsInformation;
         }
 
-        private string GetStringReport(string start, string finish, string sh)
+        #region datagridview1
+
+        private string GetSqlReport(string start, string finish, string sh)
         {
 #if OLD
             string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
@@ -358,7 +357,7 @@ namespace report
             ChangeColorReport();
         }
 
-        private async Task<DataSetInformation> LoadReportSmAsync(DataSet ds, string start, string finish, string sh, string tableName)
+        private string GetSqlSm(string start, string finish, string sh)
         {
             string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
 "date_format(Timestamp, \"%d %M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(ms.data_err, \"%d %M %Y\")))" +
@@ -373,75 +372,7 @@ namespace report
 "round((sum(data_193) + sum(data_199)), 2) as alum, round((count(dbid) * '4.32' * '" + sh + "'), 2) as drob, "+sql2+" " +
   "from spslogger.mixreport as mr where Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')  group by df,shift ";
 
-            DataSetInformation dsInformation = null;
-            MySqlConnection mCon = new MySqlConnection();
-
-            try
-            {
-                mCon = await pool.GetConnectionAsync();
-
-                if (mCon.State != ConnectionState.Open)
-                {
-                    mCon.Dispose();
-                    mCon = await pool.GetConnectionAsync();
-                }
-
-                using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
-                using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
-                {
-                    cmd.CommandTimeout = 180;
-
-                    DataTable dt = new DataTable();
-                    // Добавляем столбцы в таблицу, основываясь на схеме reader
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        dt.Columns.Add(reader.GetName(i));
-                    }
-
-                    // Чтение данных
-                    while (await reader.ReadAsync())  // Асинхронное чтение данных
-                    {
-                        DataRow row = dt.NewRow();
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            // Проверяем, что столбец существует, и если он пустой, то обрабатываем корректно
-                            row[i] = await reader.IsDBNullAsync(i) ? DBNull.Value : reader.GetValue(i);
-                        }
-                        dt.Rows.Add(row);
-                    }
-
-                    dt.TableName = tableName;  // Назначение имени таблицы
-                    ds.Tables.Add(dt);
-
-                    dsInformation = new DataSetInformation(
-                        tableName,
-                        ds.Tables[tableName],
-                        sh,
-                        start,
-                        finish,
-                        DateTime.Now
-                        );
-                }
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
-            }
-            catch (Exception ex)
-            {
-                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
-            }
-            finally 
-            { 
-                if (mCon != null) 
-                {
-                    // Возвращаем подключение в пул после использования
-                    await pool.CloseConnectionAsync(mCon);
-                } 
-            }
-
-            return dsInformation;
+            return sql;
 
         }
 
@@ -472,7 +403,7 @@ namespace report
             ChangeColorReport();
         }
 
-        private async Task<DataSetInformation> LoadReportMonthAsync(DataSet ds, string start, string finish, string sh, string tableName)
+        private string GetSqlMonth(string start, string finish, string sh)
         {
             string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and(if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%M %Y\")," +
 "date_format(Timestamp, \"%M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%M %Y\"),date_format(ms.data_err, \"%M %Y\")))" +
@@ -487,75 +418,8 @@ namespace report
 "round((sum(data_193) + sum(data_199)), 2) as alum, round((count(dbid) * '4.32' * '" + sh + "'), 2) as drob, " + sql2 + " " +
   "from spslogger.mixreport as mr where Timestamp >= '" + start + " 08:00:00'  group by df order by min ";
 
-            MySqlConnection mCon = new MySqlConnection();
-            DataSetInformation dsInformation = null;
-
-            try
-            {
-                mCon = await pool.GetConnectionAsync();
-
-                if (mCon.State != ConnectionState.Open)
-                {
-                    mCon.Dispose();
-                    mCon = await pool.GetConnectionAsync();
-                }
-
-                using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
-                using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
-                {
-                    cmd.CommandTimeout = 180;
-
-                    DataTable dt = new DataTable();
-                    // Добавляем столбцы в таблицу, основываясь на схеме reader
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        dt.Columns.Add(reader.GetName(i));
-                    }
-
-                    // Чтение данных
-                    while (await reader.ReadAsync())  // Асинхронное чтение данных
-                    {
-                        DataRow row = dt.NewRow();
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            // Проверяем, что столбец существует, и если он пустой, то обрабатываем корректно
-                            row[i] = await reader.IsDBNullAsync(i) ? DBNull.Value : reader.GetValue(i);
-                        }
-                        dt.Rows.Add(row);
-                    }
-
-                    dt.TableName = tableName;  // Назначение имени таблицы
-                    ds.Tables.Add(dt);
-
-                    dsInformation = new DataSetInformation(
-                        tableName,
-                        ds.Tables[tableName],
-                        sh,
-                        start,
-                        finish,
-                        DateTime.Now
-                        );
-                }
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
-            }
-            catch (Exception ex)
-            {
-                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
-            }
-            finally
-            {
-                if (mCon != null)
-                {
-                    // Возвращаем подключение в пул после использования
-                    await pool.CloseConnectionAsync(mCon);
-                }
-            }
-
-            return dsInformation;
+            
+            return sql;
 
         }
 
@@ -586,7 +450,7 @@ namespace report
             ChangeColorReport();
         }
 
-        private async Task<DataSetInformation> LoadReportSuAsync(DataSet ds, string start, string finish, string sh, string tableName)
+        private string GetSqlSu(string start, string finish, string sh)
         {
             string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where (if (time(Timestamp) < '08:00:00',date_format(date_sub(Timestamp, INTERVAL 1 DAY), \"%d %M %Y\")," +
 "date_format(Timestamp, \"%d %M %Y\")))= ( if (time(ms.data_err) < '08:00:00',date_format(date_sub(ms.data_err, INTERVAL 1 DAY), \"%d %M %Y\"),date_format(ms.data_err, \"%d %M %Y\"))))" +
@@ -603,77 +467,7 @@ namespace report
 "round((sum(data_193) + sum(data_199)), 2) as alum, round((count(dbid) * '4.32' * '" + sh + "'), 2) as drob, "+sql2+" " +
   "from spslogger.mixreport as mr where Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')  group by df";
 
-            DataSetInformation dsInformation = null;
-
-            MySqlConnection mCon = new MySqlConnection();
-
-            try
-            {
-                mCon = await pool.GetConnectionAsync();
-
-                if (mCon.State != ConnectionState.Open)
-                {
-                    mCon.Dispose();
-                    mCon = await pool.GetConnectionAsync();
-                }
-
-                // string sql = ("SELECT * FROM spslogger.configtable;");
-                using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
-                using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
-                {
-                    cmd.CommandTimeout = 180;
-
-                    DataTable dt = new DataTable();
-                    // Добавляем столбцы в таблицу, основываясь на схеме reader
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        dt.Columns.Add(reader.GetName(i));
-                    }
-
-                    // Чтение данных
-                    while (await reader.ReadAsync())  // Асинхронное чтение данных
-                    {
-                        DataRow row = dt.NewRow();
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            // Проверяем, что столбец существует, и если он пустой, то обрабатываем корректно
-                            row[i] = await reader.IsDBNullAsync(i) ? DBNull.Value : reader.GetValue(i);
-                        }
-                        dt.Rows.Add(row);
-                    }
-
-                    dt.TableName = tableName;  // Назначение имени таблицы
-                    ds.Tables.Add(dt);
-
-                    dsInformation = new DataSetInformation(
-                    tableName,
-                    ds.Tables[tableName],
-                    sh,
-                    start,
-                    finish,
-                    DateTime.Now
-                    );
-                }
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
-            }
-            catch (Exception ex)
-            {
-                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
-            }
-            finally
-            {
-                if (mCon != null)
-                {
-                    // Возвращаем подключение в пул после использования
-                    await pool.CloseConnectionAsync(mCon);
-                }
-            }
-
-            return dsInformation;
+            return sql;
         }
 
         private void UpdateUiReportSu(DataTable ds)
@@ -705,83 +499,13 @@ namespace report
             ChangeColorReport();
         }
 
-        private async Task<DataSetInformation> LoadBreakAsync(DataSet ds, string start, string finish, string sh, string tableName)
+        private string GetSqlBreak(string start, string finish, string sh)
         {
             string sql = "SELECT *" +
 
   "from spslogger.error_mas where data_err >= '" + start + " 08:00:00' and data_err < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00') ";
 
-            DataSetInformation dsInformation = null;
-
-            MySqlConnection mCon = new MySqlConnection();
-
-            try
-            {
-                mCon = await pool.GetConnectionAsync();
-
-                if (mCon.State != ConnectionState.Open)
-                {
-                    mCon.Dispose();
-                    mCon = await pool.GetConnectionAsync();
-                }
-
-                using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
-                using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
-                {
-                    cmd.CommandTimeout = 180;
-
-
-                    DataTable dt = new DataTable();
-                    // Добавляем столбцы в таблицу, основываясь на схеме reader
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        dt.Columns.Add(reader.GetName(i));
-                    }
-
-                    // Чтение данных
-                    while (await reader.ReadAsync())  // Асинхронное чтение данных
-                    {
-                        DataRow row = dt.NewRow();
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            // Проверяем, что столбец существует, и если он пустой, то обрабатываем корректно
-                            row[i] = await reader.IsDBNullAsync(i) ? DBNull.Value : reader.GetValue(i);
-                        }
-                        dt.Rows.Add(row);
-                    }
-
-                    dt.TableName = tableName;  // Назначение имени таблицы
-                    ds.Tables.Add(dt);
-
-                    dsInformation = new DataSetInformation(
-                    tableName,
-                    ds.Tables[tableName],
-                    sh,
-                    start,
-                    finish,
-                    DateTime.Now
-                    );
-                }
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
-            }
-            catch (Exception ex)
-            {
-                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
-            }
-            finally
-            {
-                if (mCon != null)
-                {
-                    // Возвращаем подключение в пул после использования
-                    await pool.CloseConnectionAsync(mCon);
-                }
-            }
-
-            return dsInformation;
+            return sql;
         }
 
         private void UpdateUiBreak(DataTable ds)
@@ -815,7 +539,7 @@ namespace report
         #endregion
 
         #region datagridview2
-        private async Task<DataSetInformation> LoadSumAsync(DataSet ds, string start, string finish, string sh, string tableName)
+        private string GetSqlSum(string start, string finish, string sh)
         {
 #if OLD
             string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where mr.data_52 = ms.recepte and  ms.data_err >= '" + start + " 08:00:00' and ms.data_err < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')" +
@@ -851,79 +575,8 @@ namespace report
                  " ' / ', '" + sh + "') as drob," +
                  " " + sql2 + " from spslogger.mixreport as mr where  Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')   group by data_52";
 #endif
-            DataSetInformation dsInformation = null;
-            MySqlConnection mCon = new MySqlConnection();
 
-            try
-            {
-                mCon = await pool.GetConnectionAsync();
-
-                if (mCon.State != ConnectionState.Open)
-                {
-                    mCon.Dispose();
-                    mCon = await pool.GetConnectionAsync();
-                }
-
-                using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
-                using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
-                {
-                    await mCon.ClearPoolAsync(mCon);
-                    cmd.CommandTimeout = 180;
-
-                    DataTable dt = new DataTable();
-                    // Добавляем столбцы в таблицу, основываясь на схеме reader
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        dt.Columns.Add(reader.GetName(i));
-                    }
-
-                    // Чтение данных
-                    while (await reader.ReadAsync())  // Асинхронное чтение данных
-                    {
-                        DataRow row = dt.NewRow();
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            // Проверяем, что столбец существует, и если он пустой, то обрабатываем корректно
-                            row[i] = await reader.IsDBNullAsync(i) ? DBNull.Value : reader.GetValue(i);
-                        }
-                        dt.Rows.Add(row);
-                    }
-
-                    dt.TableName = tableName;  // Назначение имени таблицы
-                    ds.Tables.Add(dt);
-
-                    dsInformation = new DataSetInformation
-                    (
-                        tableName,
-                        ds.Tables[tableName],
-                        sh,
-                        start,
-                        finish,
-                        DateTime.Now
-                    );
-
-                }
-
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
-            }
-            catch (Exception ex)
-            {
-                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
-            }
-            finally
-            {
-                if (mCon != null)
-                {
-                    // Возвращаем подключение в пул после использования
-                     await pool.CloseConnectionAsync(mCon);
-                }
-            }
-
-            return dsInformation;
+            return sql;
         }
 
         private void UpdateUiSum(DataTable ds)
@@ -955,7 +608,7 @@ namespace report
         #endregion
 
         #region datagridview3
-        private async Task<DataSetInformation> LoadSum2Async(DataSet ds, string start, string finish, string sh, string tableName)
+        private string GetSqlSum2(string start, string finish, string sh)
         {
             string sql2 = "(select sum(sum_er) as brak from spslogger.error_mas as ms where ms.data_err >= '" + start + " 08:00:00' and ms.data_err < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00')" +
 ") as brak";
@@ -976,75 +629,7 @@ namespace report
 "concat(cast(round(((count(dbid)-" + sql3 + ") * '4.32' * '" + sh + "'), 2) as char(10)), ' / ', '" + sh + "') as drob, "+sql2+" from spslogger.mixreport as mr where " +
 " Timestamp >= '" + start + " 08:00:00' and Timestamp < concat( date_add('" + finish + "', interval 1 day), ' 08:00:00') ";
 
-            DataSetInformation dsInformation = null;
-            MySqlConnection mCon = new MySqlConnection();
-
-            try
-            {
-                mCon = await pool.GetConnectionAsync();
-
-                if (mCon.State != ConnectionState.Open)
-                {
-                    mCon.Dispose();
-                    mCon = await pool.GetConnectionAsync();
-                }
-
-                using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
-                using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
-                {
-                    cmd.CommandTimeout = 180;
-
-                    DataTable dt = new DataTable();
-                    // Добавляем столбцы в таблицу, основываясь на схеме reader
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        dt.Columns.Add(reader.GetName(i));
-                    }
-
-                    // Чтение данных
-                    while (await reader.ReadAsync())  // Асинхронное чтение данных
-                    {
-                        DataRow row = dt.NewRow();
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            // Проверяем, что столбец существует, и если он пустой, то обрабатываем корректно
-                            row[i] = await reader.IsDBNullAsync(i) ? DBNull.Value : reader.GetValue(i);
-                        }
-                        dt.Rows.Add(row);
-                    }
-
-                    dt.TableName = tableName;  // Назначение имени таблицы
-                    ds.Tables.Add(dt);
-
-                    dsInformation = new DataSetInformation(
-                        tableName,
-                        ds.Tables[tableName],
-                        sh,
-                        start,
-                        finish,
-                        DateTime.Now
-                        );
-                }
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine(ex.Message);
-                this.BeginInvoke((Action)(() => MessageBox.Show("Ошибка связи с базой данных. Повторите попытку позже\n" + ex.Message)));
-            }
-            catch (Exception ex)
-            {
-                this.BeginInvoke((Action)(() => MessageBox.Show(ex.Message)));
-            }
-            finally
-            {
-                if (mCon != null)
-                {
-                    // Возвращаем подключение в пул после использования
-                    await pool.CloseConnectionAsync(mCon);
-                }
-            }
-
-            return dsInformation;
+            return sql;
         }
 
         private void UpdateUiSum2(DataTable ds)
