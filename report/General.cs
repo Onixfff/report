@@ -767,7 +767,7 @@ namespace report
 
         }
 
-        private async void Button7_Click(object sender, EventArgs e)
+        private async void ButtonThisMonth_Click(object sender, EventArgs e)
         {
             bool isComlite;
 
@@ -781,7 +781,7 @@ namespace report
                 }
             }
 
-            Cursor.Current = Cursors.WaitCursor;
+            this.UseWaitCursor = true;
 
             picker();
 
@@ -815,6 +815,7 @@ namespace report
                 }
             }
 
+            this.UseWaitCursor = false;
         }
 
         private void DateTimePicker_start_ValueChanged(object sender, EventArgs e)
@@ -839,7 +840,7 @@ namespace report
             }
             try
             {
-                Cursor.Current = Cursors.WaitCursor;
+                this.UseWaitCursor = true;
 
                 string click = ((Button)sender).Text;
 
@@ -885,6 +886,7 @@ namespace report
             }
             finally
             {
+                this.UseWaitCursor = false;
             }
         }
 
@@ -999,7 +1001,7 @@ namespace report
             //}
         }
 
-        private async void Button14_Click(object sender, EventArgs e)
+        private async void ButtonUpdate_Click(object sender, EventArgs e)
         {
             bool isComlite;
 
@@ -1012,6 +1014,8 @@ namespace report
                     return;
                 }
             }
+
+            this.UseWaitCursor = true;
 
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
@@ -1032,6 +1036,7 @@ namespace report
 
             await FirstUpdate(tableName);
 
+            this.UseWaitCursor = false;
         }
 
         private void RemoveDataTablesFromDataSet(string tableName)
@@ -1070,7 +1075,7 @@ namespace report
             }
         }
 
-        private async void Button15_Click(object sender, EventArgs e)
+        private async void ButtonSm_Click(object sender, EventArgs e)
         {
             bool isComlite;
 
@@ -1084,7 +1089,7 @@ namespace report
                 }
             }
 
-            Cursor.Current = Cursors.WaitCursor;
+            this.UseWaitCursor = true;
 
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
@@ -1100,9 +1105,11 @@ namespace report
                 }
             }
 
+            this.UseWaitCursor = false;
+
         }
 
-        private async void Button16_Click(object sender, EventArgs e)
+        private async void ButtonSu_Click(object sender, EventArgs e)
         {
             bool isComlite;
 
@@ -1116,7 +1123,7 @@ namespace report
                 }
             }
 
-            Cursor.Current = Cursors.WaitCursor;
+            this.UseWaitCursor = true;
 
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
@@ -1124,7 +1131,7 @@ namespace report
 
             string tableName = $"{sh}: {start} - {finish}";
 
-            foreach (var item in _datasetInformationReportsSm)
+            foreach (var item in _dataSetInformationReportsSu)
             {
                 if (item.TableName == tableName && item.Sh == sh)
                 {
@@ -1132,9 +1139,10 @@ namespace report
                 }
             }
 
+            this.UseWaitCursor = false;
         }
 
-        private async void Button17_Click(object sender, EventArgs e)
+        private async void ButtonBreak_Click(object sender, EventArgs e)
         {
             bool isComlite;
 
@@ -1147,6 +1155,8 @@ namespace report
                     return;
                 }
             }
+
+            this.UseWaitCursor = true;
 
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
@@ -1161,9 +1171,11 @@ namespace report
                     UpdateUiBreak(item.DataTable);
                 }
             }
+
+            this.UseWaitCursor = false;
         }
 
-        private async void Button18_Click(object sender, EventArgs e)
+        private async void ButtonReportMonth_Click(object sender, EventArgs e)
         {
             bool isComlite;
 
@@ -1177,7 +1189,7 @@ namespace report
                 }
             }
 
-            Cursor.Current = Cursors.WaitCursor;
+            this.UseWaitCursor = true;
 
             string sh = textBox1.Text.ToString();
             string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
@@ -1185,7 +1197,7 @@ namespace report
 
             string tableName = $"{sh}: {start} - {finish}";
 
-            foreach (var item in _datasetInformationReportsSm)
+            foreach (var item in _datasetInformationReportsMonth)
             {
                 if (item.TableName == tableName && item.Sh == sh)
                 {
@@ -1193,6 +1205,7 @@ namespace report
                 }
             }
 
+            this.UseWaitCursor = false;
         }
 
         private void SetControlsEnabled(bool enabled)

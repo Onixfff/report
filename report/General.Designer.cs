@@ -274,7 +274,7 @@
             this.button7.Text = "Текущий месяц";
             this.button7.UseMnemonic = false;
             this.button7.UseVisualStyleBackColor = true;
-            this.button7.Click += new System.EventHandler(this.Button7_Click);
+            this.button7.Click += new System.EventHandler(this.ButtonThisMonth_Click);
             // 
             // label6
             // 
@@ -367,7 +367,7 @@
             this.button14.Text = "Пересчитать";
             this.button14.UseMnemonic = false;
             this.button14.UseVisualStyleBackColor = true;
-            this.button14.Click += new System.EventHandler(this.Button14_Click);
+            this.button14.Click += new System.EventHandler(this.ButtonUpdate_Click);
             // 
             // button15
             // 
@@ -377,7 +377,7 @@
             this.button15.TabIndex = 23;
             this.button15.Text = "Отчет по сменам";
             this.button15.UseVisualStyleBackColor = true;
-            this.button15.Click += new System.EventHandler(this.Button15_Click);
+            this.button15.Click += new System.EventHandler(this.ButtonSm_Click);
             // 
             // button16
             // 
@@ -387,7 +387,7 @@
             this.button16.TabIndex = 23;
             this.button16.Text = "Отчет по суткам";
             this.button16.UseVisualStyleBackColor = true;
-            this.button16.Click += new System.EventHandler(this.Button16_Click);
+            this.button16.Click += new System.EventHandler(this.ButtonSu_Click);
             // 
             // button17
             // 
@@ -397,7 +397,7 @@
             this.button17.TabIndex = 24;
             this.button17.Text = "Шлам";
             this.button17.UseVisualStyleBackColor = true;
-            this.button17.Click += new System.EventHandler(this.Button17_Click);
+            this.button17.Click += new System.EventHandler(this.ButtonBreak_Click);
             // 
             // button18
             // 
@@ -408,7 +408,7 @@
             this.button18.TabIndex = 23;
             this.button18.Text = "Отчет по месяцам";
             this.button18.UseVisualStyleBackColor = true;
-            this.button18.Click += new System.EventHandler(this.Button18_Click);
+            this.button18.Click += new System.EventHandler(this.ButtonReportMonth_Click);
             // 
             // General
             // 
