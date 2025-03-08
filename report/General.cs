@@ -240,6 +240,8 @@ namespace report
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
+                    cmd.CommandTimeout = 250;
+
                     DataTable dt = new DataTable();
                     // Добавляем столбцы в таблицу, основываясь на схеме reader
                     for (int i = 0; i < reader.FieldCount; i++)
@@ -286,7 +288,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    await pool.ReturnConnection(mCon);
+                    await pool.CloseConnectionAsync(mCon);
                 }
             }
 
@@ -387,6 +389,8 @@ namespace report
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
+                    cmd.CommandTimeout = 180;
+
                     DataTable dt = new DataTable();
                     // Добавляем столбцы в таблицу, основываясь на схеме reader
                     for (int i = 0; i < reader.FieldCount; i++)
@@ -433,7 +437,7 @@ namespace report
                 if (mCon != null) 
                 {
                     // Возвращаем подключение в пул после использования
-                    await pool.ReturnConnection(mCon);
+                    await pool.CloseConnectionAsync(mCon);
                 } 
             }
 
@@ -499,6 +503,8 @@ namespace report
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
+                    cmd.CommandTimeout = 180;
+
                     DataTable dt = new DataTable();
                     // Добавляем столбцы в таблицу, основываясь на схеме reader
                     for (int i = 0; i < reader.FieldCount; i++)
@@ -545,7 +551,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    await pool.ReturnConnection(mCon);
+                    await pool.CloseConnectionAsync(mCon);
                 }
             }
 
@@ -615,6 +621,8 @@ namespace report
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
+                    cmd.CommandTimeout = 180;
+
                     DataTable dt = new DataTable();
                     // Добавляем столбцы в таблицу, основываясь на схеме reader
                     for (int i = 0; i < reader.FieldCount; i++)
@@ -661,7 +669,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    await pool.ReturnConnection(mCon);
+                    await pool.CloseConnectionAsync(mCon);
                 }
             }
 
@@ -720,6 +728,9 @@ namespace report
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
+                    cmd.CommandTimeout = 180;
+
+
                     DataTable dt = new DataTable();
                     // Добавляем столбцы в таблицу, основываясь на схеме reader
                     for (int i = 0; i < reader.FieldCount; i++)
@@ -766,7 +777,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    await pool.ReturnConnection(mCon);
+                    await pool.CloseConnectionAsync(mCon);
                 }
             }
 
@@ -856,6 +867,9 @@ namespace report
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
+                    await mCon.ClearPoolAsync(mCon);
+                    cmd.CommandTimeout = 180;
+
                     DataTable dt = new DataTable();
                     // Добавляем столбцы в таблицу, основываясь на схеме reader
                     for (int i = 0; i < reader.FieldCount; i++)
@@ -905,7 +919,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                     await pool.ReturnConnection(mCon);
+                     await pool.CloseConnectionAsync(mCon);
                 }
             }
 
@@ -978,6 +992,8 @@ namespace report
                 using (MySqlCommand cmd = new MySqlCommand(sql, mCon))
                 using (MySqlDataReader reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                 {
+                    cmd.CommandTimeout = 180;
+
                     DataTable dt = new DataTable();
                     // Добавляем столбцы в таблицу, основываясь на схеме reader
                     for (int i = 0; i < reader.FieldCount; i++)
@@ -1024,7 +1040,7 @@ namespace report
                 if (mCon != null)
                 {
                     // Возвращаем подключение в пул после использования
-                    await pool.ReturnConnection(mCon);
+                    await pool.CloseConnectionAsync(mCon);
                 }
             }
 
