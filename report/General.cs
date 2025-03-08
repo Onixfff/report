@@ -111,7 +111,7 @@ namespace report
 
             //Загрузка данных
             // Запускаем все задачи параллельно
-            var taskLoadSu = LoadBaseReport(_reports, start, finish, sh, tableName, GetStringReport(start, finish, sh));
+            var taskLoadReport = LoadBaseReport(_reports, start, finish, sh, tableName, GetStringReport(start, finish, sh));
             var taskLoadSum = LoadSumAsync(_sum, start, finish, sh, tableName);
             var taskLoadSum2 = LoadSum2Async(_sum2, start, finish, sh, tableName);
 
@@ -123,10 +123,10 @@ namespace report
             // Пока БД работает, UI остается отзывчивым
 
             // Дожидаемся завершения всех задач
-            var results = await Task.WhenAll(taskLoadSu, taskLoadSum, taskLoadSum2,resultLoadSm, resultLoadSu, resultLoadMonth, resultLoadBreak);
+            var results = await Task.WhenAll(taskLoadReport, taskLoadSum, taskLoadSum2,resultLoadSm, resultLoadSu, resultLoadMonth, resultLoadBreak);
 
             // Добавляем полученные данные в коллекции
-            if (results[0] != null) _dataSetInformationReportsSu.Add(results[0]);
+            if (results[0] != null) _datasetInformationReport.Add(results[0]);
             if (results[1] != null) _dataSetInformationSum.Add(results[1]);
             if (results[2] != null) _dataSetInformationSum2.Add(results[2]);
             if (results[3] != null) _datasetInformationReportsSm.Add(results[3]);
@@ -137,7 +137,7 @@ namespace report
             // Обновляем UI в главном потоке
             this.Invoke((Action)(() =>
             {
-                foreach (var item in _dataSetInformationReportsSu)
+                foreach (var item in _datasetInformationReport)
                 {
                     if (item.TableName == tableName && item.Sh == sh)
                     {
@@ -1253,11 +1253,11 @@ namespace report
 
                     string tableName = $"{sh}: {start} - {finish}";
 
-                    foreach (var item in _dataSetInformationReportsSu)
+                    foreach (var item in _datasetInformationReport)
                     {
                         if (item.TableName == tableName && item.Sh == sh)
                         {
-                            UpdateUiReportSu(item.DataTable);
+                            UpdateUiReport(item.DataTable);
                         }
                     }
 
@@ -1484,6 +1484,20 @@ namespace report
             }
 
             Cursor.Current = Cursors.WaitCursor;
+
+            string sh = textBox1.Text.ToString();
+            string finish = dateTimePicker_finish.Value.ToString("yyyy-MM-dd");
+            string start = dateTimePicker_start.Value.ToString("yyyy-MM-dd");
+
+            string tableName = $"{sh}: {start} - {finish}";
+
+            foreach (var item in _datasetInformationReportsSm)
+            {
+                if (item.TableName == tableName && item.Sh == sh)
+                {
+                    UpdateUiReportSm(item.DataTable);
+                }
+            }
 
         }
 
